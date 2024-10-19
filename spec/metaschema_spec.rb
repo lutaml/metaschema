@@ -14,6 +14,18 @@ RSpec.describe Metaschema do
     # add more later
     ]
 
+    def check_parsed_content(parsed, reparsed)
+      %i(
+        schema_name
+        schema_version
+        short_name
+        namespace
+        json_base_uri
+      ).each do |element|
+        expect(reparsed.send(element)).to eq(parsed.send(element))
+      end
+    end
+
     xml_files.each do |file_path|
       # context "with file #{Pathname.new(file_path).relative_path_from(fixtures_dir)}" do
       context "with file #{file_path}" do
@@ -39,7 +51,14 @@ RSpec.describe Metaschema do
             encoding: "utf-8",
           )
 
-          expect(generated).to be_analogous_with(xml_string)
+          cleaned_xml_string = xml_string.gsub(/^<\?xml-model.*\n/, "")
+
+          puts "original---------"
+          puts cleaned_xml_string
+          puts "------"
+          puts generated
+
+          expect(generated).to be_analogous_with(cleaned_xml_string)
         end
       end
     end

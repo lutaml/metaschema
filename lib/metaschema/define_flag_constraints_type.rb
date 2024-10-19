@@ -18,7 +18,7 @@ module Metaschema
 
     xml do
       root "DefineFlagConstraintsType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_element "let", to: :let
       map_element "allowed-values", to: :allowed_values

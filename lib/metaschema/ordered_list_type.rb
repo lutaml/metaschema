@@ -11,7 +11,7 @@ module Metaschema
 
     xml do
       root "orderedListType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "start", to: :start
       map_element "li", to: :li

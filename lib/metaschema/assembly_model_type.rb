@@ -20,7 +20,7 @@ module Metaschema
 
     xml do
       root "AssemblyModelType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_element "assembly", to: :assembly
       map_element "field", to: :field

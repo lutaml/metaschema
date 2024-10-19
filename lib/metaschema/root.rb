@@ -27,7 +27,7 @@ module Metaschema
 
     xml do
       root "METASCHEMA"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "abstract", to: :abstract
       map_element "schema-name", to: :schema_name

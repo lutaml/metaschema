@@ -6,7 +6,7 @@ module Metaschema
 
     xml do
       root "JsonKeyType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "flag-ref", to: :flag_ref
     end

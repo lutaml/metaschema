@@ -10,7 +10,7 @@ module Metaschema
 
     xml do
       root "key-field"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "target", to: :target
       map_attribute "pattern", to: :pattern

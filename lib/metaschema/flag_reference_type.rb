@@ -20,7 +20,7 @@ module Metaschema
 
     xml do
       root "FlagReferenceType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "ref", to: :ref
       map_attribute "index", to: :index

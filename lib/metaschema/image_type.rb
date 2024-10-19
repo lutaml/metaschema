@@ -8,7 +8,7 @@ module Metaschema
 
     xml do
       root "imageType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "alt", to: :alt
       map_attribute "src", to: :src

@@ -1,7 +1,7 @@
 require "lutaml/model"
 
 require_relative "anchor_type"
-require_relative "block_quote_type"
+# require_relative "block_quote_type"
 require_relative "code_type"
 require_relative "image_type"
 require_relative "inline_markup_type"
@@ -12,6 +12,7 @@ require_relative "preformatted_type"
 
 module Metaschema
   class ListType < Lutaml::Model::Serializable; end
+  class BlockQuoteType < Lutaml::Model::Serializable; end
 
   class ListItemType < Lutaml::Model::Serializable
     attribute :content, :string
@@ -42,7 +43,7 @@ module Metaschema
 
     xml do
       root "listItemType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_content to: :content
       map_element "a", to: :a

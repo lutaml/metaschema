@@ -28,7 +28,7 @@ module Metaschema
 
     xml do
       root "RemarksType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "class", to: :class
       map_element "h1", to: :h1

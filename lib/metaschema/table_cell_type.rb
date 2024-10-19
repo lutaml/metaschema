@@ -25,7 +25,7 @@ module Metaschema
 
     xml do
       root "tableCellType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_content to: :content
       map_attribute "align", to: :align

@@ -1,6 +1,6 @@
 require "lutaml/model"
 
-require_relative "assembly_model_type"
+# require_relative "assembly_model_type"
 require_relative "define_assembly_constraints_type"
 require_relative "example_type"
 require_relative "flag_reference_type"
@@ -13,6 +13,8 @@ require_relative "property_type"
 require_relative "remarks_type"
 
 module Metaschema
+  class AssemblyModelType < Lutaml::Model::Serializable; end
+
   class InlineAssemblyDefinitionType < Lutaml::Model::Serializable
     attribute :min_occurs, :integer, default: -> { "0" }
     attribute :max_occurs, :string, default: -> { "1" }
@@ -35,7 +37,7 @@ module Metaschema
 
     xml do
       root "InlineAssemblyDefinitionType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "min-occurs", to: :min_occurs
       map_attribute "max-occurs", to: :max_occurs

@@ -14,7 +14,7 @@ module Metaschema
 
     xml do
       root "scope"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "metaschema-namespace", to: :metaschema_namespace
       map_attribute "metaschema-short-name", to: :metaschema_short_name

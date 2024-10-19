@@ -25,7 +25,7 @@ module Metaschema
 
     xml do
       root "GlobalFlagDefinitionType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "name", to: :name
       map_attribute "index", to: :index

@@ -26,7 +26,7 @@ module Metaschema
 
     xml do
       root "blockQuoteType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_element "h1", to: :h1
       map_element "h2", to: :h2

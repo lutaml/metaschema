@@ -19,7 +19,7 @@ module Metaschema
 
     xml do
       root "AllowedValuesType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "id", to: :id
       map_attribute "level", to: :level

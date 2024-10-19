@@ -34,7 +34,7 @@ module Metaschema
 
     xml do
       root "GlobalFieldDefinitionType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "as-type", to: :as_type
       map_attribute "default", to: :default

@@ -19,7 +19,7 @@ module Metaschema
 
     xml do
       root "field"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "target", to: :target
       map_element "let", to: :let

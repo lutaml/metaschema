@@ -10,7 +10,7 @@ module Metaschema
 
     xml do
       root "ConstraintLetType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "var", to: :var
       map_attribute "expression", to: :expression

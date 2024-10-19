@@ -21,7 +21,7 @@ module Metaschema
 
     xml do
       root "GroupedChoiceType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0", "xmlns"
+      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "min-occurs", to: :min_occurs
       map_attribute "max-occurs", to: :max_occurs
