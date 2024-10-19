@@ -1,0 +1,128 @@
+= Metaschema
+
+image:https://img.shields.io/gem/v/metaschema.svg["Gem Version", link="https://rubygems.org/gems/metaschema"]
+image:https://github.com/lutaml/metaschema/workflows/rake/badge.svg["Build Status", link="https://github.com/lutaml/metaschema/actions?workflow=rake"]
+image:https://codeclimate.com/github/lutaml/metaschema/badges/gpa.svg["Code Climate", link="https://codeclimate.com/github/lutaml/metaschema"]
+
+== Purpose
+
+This Ruby gem implements a parser and generator for the
+https://pages.nist.gov/metaschema[NIST Metaschema Information Modeling Framework].
+
+Metaschema is a specification for defining information models in a structured
+format (currently via XML). It provides a way to define and manage information
+model schemas that can be converted into XML and JSON Schemas.
+
+This library can be used to parse and generate information schemas defined in
+the Metaschema XML format.
+
+This library can also be used to generate XML schemas and JSON Schemas from
+Metaschema XML files.
+
+NOTE: The Metaschema gem is a work in progress and may not yet support all
+features of the Metaschema specification.
+
+NOTE: The Metaschema gem will support the generation of data accessors for
+Metaschema-defined information models in the future.
+
+
+== Features
+
+TODO: This list is a TODO list. None of them have been completed.
+
+. Parse, build and round-trip Metaschema XML files
+. Validate Metaschema XML files against the Metaschema XML Schema
+. Generate XML (XSD) and JSON Schemas from Metaschema XML files
+. Generate Lutaml::Model (Ruby) classes that allow access and manipulation of
+  Metaschema-defined information models.
+. Validate Metaschema-defined information models against the Metaschema XML
+  Schema
+
+== Installation
+
+To install the metaschema gem, use one of the following methods.
+
+Add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'metaschema'
+----
+
+Then execute:
+
+[source,sh]
+----
+$ bundle install
+----
+
+Or install it directly using:
+
+[source,sh]
+----
+$ gem install metaschema
+----
+
+After installation, you can start using the metaschema gem in your Ruby projects
+or via the command-line interface.
+
+
+== Ruby API
+
+[source,ruby]
+----
+require 'metaschema'
+
+# Load a Metaschema file
+# Sample at spec/fixtures/metaschema/examples/computer-example.xml
+ms = Metaschema::Root.from_file("computer-example.xml")
+
+ms.to_xml
+# <METASCHEMA xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+#  xsi:schemaLocation="http://csrc.nist.gov/ns/oscal/metaschema/1.0 ../schema/xml/metaschema.xsd"
+#  xmlns="http://csrc.nist.gov/ns/oscal/metaschema/1.0">
+#     <schema-name>Computer Model</schema-name>
+#     <schema-version>0.0.5</schema-version>
+
+ms.schema_name
+# "Computer Model"
+
+ms.schema_version
+# "0.0.5"
+
+ms.assemblies
+# [Vendor, Computer, ...]
+----
+
+
+== Tests
+
+The `spec/fixtures` folder contains tests that the Metaschema gem needs to
+comply with.
+
+Including:
+
+`spec/fixtures/metaschema`:: the submoduled repository from the
+https://github.com/usnistgov/metaschema[Metaschema project]
+
+`spec/fixtures/metaschema/examples`:: examples of Metaschema XML files
+(for us to test round-tripping)
+
+`spec/fixtures/metaschema/test-suite`:: the test suite for the Metaschema
+project. TODO: This library is to be tested against these files.
+
+`spec/fixtures/metaschema/test-suite/schema-generation`:: these files test
+against individual features of Metaschema. TODO: This library needs to run RSpecs
+against every directory here each representing a separate feature.
+
+`spec/fixtures/metaschema/test-suite/worked-examples`:: these files are complete
+Metaschema XML examples that exercises all features of Metaschema. TODO: This
+library needs to run RSpecs against each of these files.
+
+
+
+== License
+
+Copyright Ribose.
+
+BSD-3 license.
