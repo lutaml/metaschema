@@ -8,11 +8,14 @@ RSpec.describe Metaschema do
   fixtures_dir = Pathname.new(__dir__).join("fixtures")
 
   describe "XML round-trip conversion" do
-    # xml_files = Dir[fixtures_dir.join("xml", "*.xml", "*.gc")]
-    xml_files = [
-      "spec/fixtures/metaschema/test-suite/schema-generation/allowed-values/allowed-values-basic_metaschema.xml",
-    # add more later
-    ]
+    xml_files = Dir[fixtures_dir.join("metaschema/test-suite/schema-generation", "**", "*_metaschema.xml")] +
+                Dir[fixtures_dir.join("metaschema/examples", "*.xml")] +
+                Dir[fixtures_dir.join("metaschema/worked-examples", "**", "*.xml")]
+
+    # xml_files = [
+    #   "spec/fixtures/metaschema/test-suite/schema-generation/allowed-values/allowed-values-basic_metaschema.xml",
+    # # add more later
+    # ]
 
     def check_parsed_content(parsed, reparsed)
       %i(
@@ -27,8 +30,8 @@ RSpec.describe Metaschema do
     end
 
     xml_files.each do |file_path|
-      # context "with file #{Pathname.new(file_path).relative_path_from(fixtures_dir)}" do
-      context "with file #{file_path}" do
+      context "with file #{Pathname.new(file_path).relative_path_from(fixtures_dir)}" do
+        # context "with file #{file_path}" do
         let(:xml_string) { File.read(file_path) }
 
         it "provides identical attribute access" do
@@ -51,12 +54,14 @@ RSpec.describe Metaschema do
             encoding: "utf-8",
           )
 
-          cleaned_xml_string = xml_string.gsub(/^<\?xml-model.*\n/, "")
+          cleaned_xml_string = xml_string.
+            gsub(/^<\?xml-model.*\n/, "").
+            gsub(/^<\?xml-stylesheet.*\n/, "")
 
-          puts "original---------"
-          puts cleaned_xml_string
-          puts "------"
-          puts generated
+          # puts "original---------"
+          # puts cleaned_xml_string
+          # puts "------"
+          # puts generated
 
           expect(generated).to be_analogous_with(cleaned_xml_string)
         end
