@@ -8,7 +8,7 @@ require_relative "insert_type"
 module Metaschema
   class CodeType < Lutaml::Model::Serializable
     attribute :content, :string
-    attribute :class, :string
+    attribute :klass, :string
     attribute :a, AnchorType, collection: true
     attribute :insert, InsertType, collection: true
     attribute :br, :string, collection: true
@@ -27,7 +27,7 @@ module Metaschema
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_content to: :content
-      map_attribute "class", to: :class
+      map_attribute "class", to: :klass
       map_element "a", to: :a
       map_element "insert", to: :insert
       map_element "br", to: :br
