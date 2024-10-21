@@ -10,7 +10,7 @@ require_relative "table_type"
 
 module Metaschema
   class RemarksType < Lutaml::Model::Serializable
-    attribute :class, :string
+    attribute :klass, :string
     attribute :h1, InlineMarkupType, collection: true
     attribute :h2, InlineMarkupType, collection: true
     attribute :h3, InlineMarkupType, collection: true
@@ -30,7 +30,7 @@ module Metaschema
       root "RemarksType"
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
-      map_attribute "class", to: :class
+      map_attribute "class", to: :klass
       map_element "h1", to: :h1
       map_element "h2", to: :h2
       map_element "h3", to: :h3
