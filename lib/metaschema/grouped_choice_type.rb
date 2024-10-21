@@ -28,9 +28,9 @@ module Metaschema
       map_element "json-key", to: :json_key
       map_element "group-as", to: :group_as
       map_element "discriminator", to: :discriminator
-      map_element "assembly", to: :assembly
       map_element "field", to: :field
       map_element "define-assembly", to: :define_assembly
+      map_element "assembly", to: :assembly
       map_element "define-field", to: :define_field
     end
   end

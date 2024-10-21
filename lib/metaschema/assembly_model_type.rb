@@ -22,9 +22,9 @@ module Metaschema
       root "AssemblyModelType"
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
-      map_element "assembly", to: :assembly
       map_element "field", to: :field
       map_element "define-assembly", to: :define_assembly
+      map_element "assembly", to: :assembly
       map_element "define-field", to: :define_field
       map_element "choice", to: :choice
       map_element "choice-group", to: :choice_group

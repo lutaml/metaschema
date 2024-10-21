@@ -18,8 +18,8 @@ module Metaschema
 
       map_attribute "metaschema-namespace", to: :metaschema_namespace
       map_attribute "metaschema-short-name", to: :metaschema_short_name
-      map_element "assembly", to: :assembly
       map_element "field", to: :field
+      map_element "assembly", to: :assembly
       map_element "flag", to: :flag
     end
   end
