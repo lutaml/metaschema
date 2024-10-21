@@ -23,7 +23,7 @@ module Metaschema
     attribute :img, ImageType, collection: true
 
     xml do
-      root "MarkupLineDatatype"
+      root "MarkupLineDatatype", ordered: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_content to: :content

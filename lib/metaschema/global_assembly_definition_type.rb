@@ -32,7 +32,7 @@ module Metaschema
     attribute :example, ExampleType, collection: true
 
     xml do
-      root "GlobalAssemblyDefinitionType"
+      root "GlobalAssemblyDefinitionType", ordered: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "name", to: :name

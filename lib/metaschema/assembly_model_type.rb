@@ -19,7 +19,7 @@ module Metaschema
     attribute :any, AnyType
 
     xml do
-      root "AssemblyModelType"
+      root "AssemblyModelType", ordered: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_element "field", to: :field
