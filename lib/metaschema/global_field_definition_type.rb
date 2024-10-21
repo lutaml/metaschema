@@ -18,6 +18,7 @@ module Metaschema
     attribute :name, :string
     attribute :index, :integer
     attribute :scope, :string, default: -> { "global" }
+    attribute :collapsible, :string, default: -> { "no" }
     attribute :deprecated, :string
     attribute :formal_name, :string
     attribute :description, MarkupLineDatatype
@@ -42,6 +43,7 @@ module Metaschema
       map_attribute "index", to: :index
       map_attribute "scope", to: :scope
       map_attribute "deprecated", to: :deprecated
+      map_attribute "collapsible", to: :collapsible
       map_element "formal-name", to: :formal_name
       map_element "description", to: :description
       map_element "prop", to: :prop
