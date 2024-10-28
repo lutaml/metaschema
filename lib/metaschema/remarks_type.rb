@@ -27,7 +27,7 @@ module Metaschema
     attribute :img, ImageType, collection: true
 
     xml do
-      root "RemarksType"
+      root "RemarksType", mixed: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_attribute "class", to: :klass

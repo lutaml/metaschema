@@ -25,7 +25,7 @@ module Metaschema
     attribute :img, ImageType, collection: true
 
     xml do
-      root "blockQuoteType"
+      root "blockQuoteType", mixed: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_element "h1", to: :h1
