@@ -42,7 +42,7 @@ module Metaschema
     attribute :p, InlineMarkupType, collection: true
 
     xml do
-      root "listItemType"
+      root "listItemType", mixed: true
       namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
 
       map_content to: :content

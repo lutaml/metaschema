@@ -29,12 +29,12 @@ module Metaschema
 
       map_attribute "target", to: :target
       map_element "let", to: :let
+      map_element "is-unique", to: :is_unique
       map_element "allowed-values", to: :allowed_values
       map_element "matches", to: :matches
       map_element "index-has-key", to: :index_has_key
       map_element "expect", to: :expect
       map_element "index", to: :index
-      map_element "is-unique", to: :is_unique
       map_element "has-cardinality", to: :has_cardinality
       map_element "remarks", to: :remarks
     end
