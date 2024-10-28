@@ -1,11 +1,13 @@
-require "lutaml/model"
+# frozen_string_literal: true
 
-require_relative "allowed_values_type"
-require_relative "constraint_let_type"
-require_relative "expect_constraint_type"
-require_relative "index_has_key_constraint_type"
-require_relative "matches_constraint_type"
-require_relative "remarks_type"
+require 'lutaml/model'
+
+require_relative 'allowed_values_type'
+require_relative 'constraint_let_type'
+require_relative 'expect_constraint_type'
+require_relative 'index_has_key_constraint_type'
+require_relative 'matches_constraint_type'
+require_relative 'remarks_type'
 
 module Metaschema
   class DefineFlagConstraintsType < Lutaml::Model::Serializable
@@ -17,15 +19,15 @@ module Metaschema
     attribute :remarks, RemarksType
 
     xml do
-      root "DefineFlagConstraintsType", mixed: true
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
+      root 'DefineFlagConstraintsType', mixed: true
+      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
-      map_element "let", to: :let
-      map_element "allowed-values", to: :allowed_values
-      map_element "matches", to: :matches
-      map_element "index-has-key", to: :index_has_key
-      map_element "expect", to: :expect
-      map_element "remarks", to: :remarks
+      map_element 'let', to: :let
+      map_element 'allowed-values', to: :allowed_values
+      map_element 'matches', to: :matches
+      map_element 'index-has-key', to: :index_has_key
+      map_element 'expect', to: :expect
+      map_element 'remarks', to: :remarks
     end
   end
 end

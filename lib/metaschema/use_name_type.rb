@@ -1,4 +1,6 @@
-require "lutaml/model"
+# frozen_string_literal: true
+
+require 'lutaml/model'
 
 module Metaschema
   class UseNameType < Lutaml::Model::Serializable
@@ -6,11 +8,11 @@ module Metaschema
     attribute :index, :integer
 
     xml do
-      root "UseNameType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
+      root 'UseNameType'
+      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_content to: :content
-      map_attribute "index", to: :index
+      map_attribute 'index', to: :index
     end
   end
 end

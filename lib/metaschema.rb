@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "lutaml/model"
+require 'lutaml/model'
 
 Lutaml::Model::Config.configure do |config|
-  require "lutaml/model/xml_adapter/nokogiri_adapter"
+  require 'lutaml/model/xml_adapter/nokogiri_adapter'
   config.xml_adapter = Lutaml::Model::XmlAdapter::NokogiriAdapter
 end
 
-require_relative "metaschema/version"
-require_relative "metaschema/root"
+require_relative 'metaschema/version'
+require_relative 'metaschema/root'
 
 module Metaschema
   class Error < StandardError; end

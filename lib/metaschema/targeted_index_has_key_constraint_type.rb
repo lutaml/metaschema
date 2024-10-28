@@ -1,14 +1,16 @@
-require "lutaml/model"
+# frozen_string_literal: true
 
-require_relative "key_field"
-require_relative "markup_line_datatype"
-require_relative "property_type"
-require_relative "remarks_type"
+require 'lutaml/model'
+
+require_relative 'key_field'
+require_relative 'markup_line_datatype'
+require_relative 'property_type'
+require_relative 'remarks_type'
 
 module Metaschema
   class TargetedIndexHasKeyConstraintType < Lutaml::Model::Serializable
     attribute :id, :string
-    attribute :level, :string, default: -> { "ERROR" }
+    attribute :level, :string, default: -> { 'ERROR' }
     attribute :name, :string
     attribute :target, :string
     attribute :formal_name, :string
@@ -18,18 +20,18 @@ module Metaschema
     attribute :remarks, RemarksType
 
     xml do
-      root "TargetedIndexHasKeyConstraintType"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
+      root 'TargetedIndexHasKeyConstraintType'
+      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
-      map_attribute "id", to: :id
-      map_attribute "level", to: :level
-      map_attribute "name", to: :name
-      map_attribute "target", to: :target
-      map_element "formal-name", to: :formal_name
-      map_element "description", to: :description
-      map_element "prop", to: :prop
-      map_element "key-field", to: :key_field
-      map_element "remarks", to: :remarks
+      map_attribute 'id', to: :id
+      map_attribute 'level', to: :level
+      map_attribute 'name', to: :name
+      map_attribute 'target', to: :target
+      map_element 'formal-name', to: :formal_name
+      map_element 'description', to: :description
+      map_element 'prop', to: :prop
+      map_element 'key-field', to: :key_field
+      map_element 'remarks', to: :remarks
     end
   end
 end
