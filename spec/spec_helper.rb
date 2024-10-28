@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "metaschema"
-require "nokogiri"
-require "xml-c14n"
+require 'metaschema'
+require 'nokogiri'
+require 'xml-c14n'
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
+  config.example_status_persistence_file_path = '.rspec_status'
 
   # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!
@@ -16,10 +16,10 @@ RSpec.configure do |config|
   end
 end
 
-require "lutaml/model"
-require "lutaml/model/xml_adapter/nokogiri_adapter"
-require "lutaml/model/json_adapter/standard_json_adapter"
-require "lutaml/model/yaml_adapter/standard_yaml_adapter"
+require 'lutaml/model'
+require 'lutaml/model/xml_adapter/nokogiri_adapter'
+require 'lutaml/model/json_adapter/standard_json_adapter'
+require 'lutaml/model/yaml_adapter/standard_yaml_adapter'
 
 Lutaml::Model::Config.configure do |config|
   config.xml_adapter = Lutaml::Model::XmlAdapter::NokogiriAdapter

@@ -1,8 +1,10 @@
-require "lutaml/model"
+# frozen_string_literal: true
 
-require_relative "assembly"
-require_relative "field"
-require_relative "flag"
+require 'lutaml/model'
+
+require_relative 'assembly'
+require_relative 'field'
+require_relative 'flag'
 
 module Metaschema
   class Scope < Lutaml::Model::Serializable
@@ -13,14 +15,14 @@ module Metaschema
     attribute :flag, Flag, collection: true
 
     xml do
-      root "scope"
-      namespace "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
+      root 'scope'
+      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
-      map_attribute "metaschema-namespace", to: :metaschema_namespace
-      map_attribute "metaschema-short-name", to: :metaschema_short_name
-      map_element "field", to: :field
-      map_element "assembly", to: :assembly
-      map_element "flag", to: :flag
+      map_attribute 'metaschema-namespace', to: :metaschema_namespace
+      map_attribute 'metaschema-short-name', to: :metaschema_short_name
+      map_element 'field', to: :field
+      map_element 'assembly', to: :assembly
+      map_element 'flag', to: :flag
     end
   end
 end
