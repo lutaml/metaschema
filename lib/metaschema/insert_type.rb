@@ -9,7 +9,7 @@ module Metaschema
 
     xml do
       root 'insertType'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_attribute 'type', to: :type
       map_attribute 'id-ref', to: :id_ref

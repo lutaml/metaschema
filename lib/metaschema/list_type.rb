@@ -10,7 +10,7 @@ module Metaschema
 
     xml do
       root 'listType'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_element 'li', to: :li
     end

@@ -5,6 +5,7 @@ source 'https://rubygems.org'
 # Specify your gem's dependencies in metaschema.gemspec
 gemspec
 
+gem 'lutaml-model', git: 'https://github.com/lutaml/lutaml-model', ref: '477791e'
 gem 'nokogiri'
 gem 'rake', '~> 13.0'
 gem 'rspec', '~> 3.0'

@@ -23,7 +23,7 @@ module Metaschema
 
     xml do
       root 'anchorType', mixed: true
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_content to: :content
       map_attribute 'href', to: :href
