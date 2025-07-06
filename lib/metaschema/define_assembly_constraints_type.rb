@@ -25,7 +25,7 @@ module Metaschema
     attribute :remarks, RemarksType
 
     xml do
-      root 'DefineAssemblyConstraintsType'
+      root 'DefineAssemblyConstraintsType', mixed: true
       namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_element 'let', to: :let

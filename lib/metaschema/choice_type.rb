@@ -15,7 +15,7 @@ module Metaschema
     attribute :define_field, InlineFieldDefinitionType, collection: true
 
     xml do
-      root 'ChoiceType'
+      root 'ChoiceType', mixed: true
       namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_element 'field', to: :field

@@ -11,7 +11,7 @@ RSpec.describe Metaschema do
   describe 'XML round-trip conversion' do
     xml_files = Dir[fixtures_dir.join('metaschema/test-suite/schema-generation', '**', '*_metaschema.xml')] +
                 Dir[fixtures_dir.join('metaschema/examples', '*.xml')] +
-                Dir[fixtures_dir.join('metaschema/worked-examples', '**', '*.xml')]
+                Dir[fixtures_dir.join('metaschema/test-suite/worked-examples', '**', '*_metaschema.xml')]
 
     # xml_files = [
     #   "spec/fixtures/metaschema/test-suite/schema-generation/allowed-values/allowed-values-basic_metaschema.xml",
