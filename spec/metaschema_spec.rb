@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'pathname'
+
 require_relative '../lib/metaschema/root'
 
 RSpec.describe Metaschema do
@@ -17,43 +18,33 @@ RSpec.describe Metaschema do
     # # add more later
     # ]
 
-    def check_parsed_content(parsed, reparsed)
-      %i[
-        schema_name
-        schema_version
-        short_name
-        namespace
-        json_base_uri
-      ].each do |element|
-        expect(reparsed.send(element)).to eq(parsed.send(element))
-      end
-    end
-
     xml_files.each do |file_path|
       context "with file #{Pathname.new(file_path).relative_path_from(fixtures_dir)}" do
         # context "with file #{file_path}" do
         let(:xml_string) { File.read(file_path) }
+        let(:parsed) { Metaschema::Root.from_xml(xml_string) }
 
-        it 'provides identical attribute access' do
-          parsed = Metaschema::Root.from_xml(xml_string)
-          generated = parsed.to_xml(
+        let(:generated) do
+          parsed.to_xml(
             pretty: true,
             declaration: true,
             encoding: 'utf-8'
           )
+        end
+
+        it 'provides identical attribute access' do # rubocop:disable RSpec/ExampleLength
           reparsed = Metaschema::Root.from_xml(generated)
 
-          check_parsed_content(parsed, reparsed)
+          expect(reparsed).to have_attributes(
+            schema_name: parsed.schema_name,
+            schema_version: parsed.schema_version,
+            short_name: parsed.short_name,
+            namespace: parsed.namespace,
+            json_base_uri: parsed.json_base_uri
+          )
         end
 
         it 'performs lossless round-trip conversion' do
-          parsed = Metaschema::Root.from_xml(xml_string)
-          generated = parsed.to_xml(
-            pretty: true,
-            declaration: true,
-            encoding: 'utf-8'
-          )
-
           cleaned_xml_string = xml_string
                                .gsub(/^<\?xml-model.*\n/, '')
                                .gsub(/^<\?xml-stylesheet.*\n/, '')
