@@ -97,7 +97,7 @@ module Metaschema
           object.inspect
         end
 
-        def process_choice(choice, deep = 0) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def process_choice(choice, deep = 0) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
           opts = {}
           opts[:min] = choice.min if choice.min != 1
           opts[:max] = choice.max if choice.max != 1
@@ -162,15 +162,76 @@ module Metaschema
 
         def process_json_main_mappings # rubocop:disable Metrics/AbcSize
           json_mapping.mappings.each do |rule|
-            opts = { to: rule.to }.compact
-
             if rule.name == (json_mapping.root_name || rule.to)
+              opts = { to: rule.to }.compact
               add "    map_instances#{inspect_kwargs(opts, ' ')}"
             else
-              opts[:with] = rule.custom_methods if rule.custom_methods.any?
+              opts = json_mapping_map_kwargs_for(rule)
               add "    map #{rule.name.inspect}#{inspect_kwargs(opts, ', ')}"
             end
           end
+        end
+
+        def json_mapping_map_kwargs_for(rule)
+          hash_difference(json_mapping_map_kwargs_from(rule), default_json_mapping_map_kwargs)
+        end
+
+        def hash_difference(left, right) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+          hash = left.dup
+          hash.each do |key, value|
+            if right.is_a?(Hash) && right.key?(key)
+              right_value = right[key]
+              if value.is_a?(Hash)
+                value = hash[key] = hash_difference(value, right_value)
+                hash.delete(key) if value.empty?
+              elsif value == right_value
+                hash.delete(key)
+              end
+            elsif value.is_a?(Hash)
+              hash[key] = hash_difference(value, nil)
+            end
+          end
+          hash
+        end
+
+        def json_mapping_map_kwargs_from(rule) # rubocop:disable Metrics/MethodLength
+          {
+            to: rule.to,
+            render_nil: rule.render_nil,
+            render_default: rule.render_default,
+            render_empty: rule.render_empty,
+            treat_nil: rule.treat_nil,
+            treat_empty: rule.treat_empty,
+            treat_omitted: rule.treat_omitted,
+            with: rule.custom_methods,
+            delegate: rule.delegate,
+            child_mappings: rule.child_mappings,
+            root_mappings: rule.root_mappings,
+            polymorphic: rule.polymorphic,
+            polymorphic_map: rule.polymorphic_map,
+            transform: rule.transform,
+            value_map: hash_difference(rule.instance_variable_get(:@value_map), rule.default_value_map)
+          }
+        end
+
+        def default_json_mapping_map_kwargs # rubocop:disable Metrics/MethodLength
+          {
+            to: nil,
+            render_nil: false,
+            render_default: false,
+            render_empty: false,
+            treat_nil: nil,
+            treat_empty: nil,
+            treat_omitted: nil,
+            with: {},
+            delegate: nil,
+            child_mappings: nil,
+            root_mappings: nil,
+            polymorphic: {},
+            polymorphic_map: {},
+            transform: {},
+            value_map: {}
+          }
         end
 
         # === XML

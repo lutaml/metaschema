@@ -17,6 +17,18 @@ RSpec.describe Metaschema::Root do
       .glob('spec/fixtures/metaschema/{examples/computer-example.xml,test-suite/**/*_metaschema.xml}')
       .sort
 
+    # rubocop:disable Layout/LineLength
+    wip_json_data_paths = %w[
+      spec/fixtures/metaschema/test-suite/schema-generation/collapsible/collapsible_test_multiple_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/datatypes/charstrings_test_okay_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/datatypes/datatypes-prose_test_valid_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/datatypes/datatypes-token_test_valid_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/group-as/group-as-by-key_test_valid_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/group-as/group-as-singleton-or-array_test_singleton_PASS.json
+      spec/fixtures/metaschema/test-suite/schema-generation/json-value-key/json-value-key-field_test_valid_PASS.json
+    ]
+    # rubocop:enable Layout/LineLength
+
     schema_paths.each do |schema_path|
       relative_schema_path = schema_path.relative_path_from(root_dir).to_s
 
@@ -46,32 +58,23 @@ RSpec.describe Metaschema::Root do
           end
           .sort
 
-        # rubocop:disable Layout/LineLength
-        fixed_json_data_paths = %w[
-          spec/fixtures/metaschema/test-suite/schema-generation/flag/flag-basic_test_simple_PASS.json
-          spec/fixtures/metaschema/test-suite/schema-generation/collapsible/collapsible_test_singleton_PASS.json
-          spec/fixtures/metaschema/test-suite/schema-generation/json-value-key/json-value-key-label_test_valid2_PASS.json
-          spec/fixtures/metaschema/test-suite/schema-generation/json-value-key/json-value-key-label_test_valid_PASS.json
-        ]
-        # rubocop:enable Layout/LineLength
-
         data_paths.each do |data_path|
           relative_data_path = data_path.relative_path_from(root_dir).to_s
 
           case relative_data_path
           when /_PASS\.json$/
-            it "can roundtrip #{relative_data_path}" do # rubocop:disable RSpec/RepeatedDescription
-              pending 'Not yet implemented' unless fixed_json_data_paths.include?(relative_data_path)
-
+            wip = wip_json_data_paths.include?(relative_data_path)
+            it "can roundtrip #{relative_data_path}", pending: ('not yet implemented' if wip) do
               data = data_path.read
+
               parser = create_json_parser(assemblies)
 
               generated_data = parser.from_json(data).to_json(pretty: true)
 
               expect(JSON.parse(generated_data)).to eq(JSON.parse(data))
             end
-          when %r{^spec/fixtures/metaschema/test-suite/worked-examples/.+.xml|_PASS\.xml$}
-            it "can roundtrip #{relative_data_path}" do # rubocop:disable RSpec/ExampleLength,RSpec/RepeatedDescription
+          when %r{^spec/fixtures/metaschema/test-suite/worked-examples/.+\.xml$|_PASS\.xml$}
+            it "can roundtrip #{relative_data_path}" do # rubocop:disable RSpec/ExampleLength
               data = data_path.read
               root_name = Nokogiri::XML(data).root.name
               model = assemblies.find { |n| n.mappings.fetch(:xml).root_element == root_name }

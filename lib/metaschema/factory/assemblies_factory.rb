@@ -83,7 +83,7 @@ module Metaschema
         end
       end
 
-      def create_collection(ref) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def create_collection(ref) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         factory = self
         type, spec = type_spec_for(ref)
         name = ref.group_as.name
@@ -116,12 +116,12 @@ module Metaschema
 
       def set_global_mappings
         @flag_map = @schema.define_flag.to_h { |n| [n.name, [Utils.attribute_type_for(n.as_type), n]] }
-        @field_map = @schema.define_field.to_h { |n| [n.name, [Utils.create_model(n.name), n]] }
+        @field_map = @schema.define_field.to_h { |n| [n.name, [Utils.initial_type_for_field(n), n]] }
         @assembly_map = @schema.define_assembly.to_h { |n| [n.name, [Utils.create_model(n.name), n]] }
       end
 
       def process_global_mappings
-        @field_map.each_value { |type, spec| FieldFactory.new(spec, self, type).call }
+        @field_map.each_value { |type, spec| FieldFactory.new(spec, self, type).call if Utils.complex_field?(spec) }
         @assembly_map.each_value { |type, spec| AssemblyFactory.new(spec, self, type).call }
       end
     end

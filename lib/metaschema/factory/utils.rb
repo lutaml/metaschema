@@ -11,11 +11,21 @@ module Metaschema
         Constants::ATTRIBUTE_TYPE_BY_DATA_TYPE.fetch(data_type)
       end
 
+      def self.complex_field?(field)
+        field.flag&.any? ||
+          field.define_flag&.any? ||
+          model?(attribute_type_for(field.as_type))
+      end
+
       def self.create_model(name, super_class = Lutaml::Model::Serializable, &block)
         model = Class.new(super_class)
         set_model_temporary_name(model, name)
         model.class_eval(&block) if block_given?
         model
+      end
+
+      def self.initial_type_for_field(field)
+        complex_field?(field) ? create_model(field.name) : attribute_type_for(field.as_type)
       end
 
       def self.model?(object)

@@ -140,11 +140,9 @@ module Metaschema
       end
 
       def content_mapping_name_in_json_for(data_type)
-        Utils.normalize_attribute_name(
-          @spec.json_value_key ||
-            @spec.json_value_key_flag&.flag_ref ||
-            JSON_VALUE_KEY_BY_DATA_TYPE[data_type]
-        )
+        @spec.json_value_key ||
+          @spec.json_value_key_flag&.flag_ref ||
+          JSON_VALUE_KEY_BY_DATA_TYPE[data_type]
       end
 
       def import_model_json_mappings(model)

@@ -113,7 +113,7 @@ module Metaschema
 
       def define_attributes_for_define_field_item(spec, model_or_choice)
         name = @root.attribute_name_for(spec)
-        type = FieldFactory.new(spec, @root).call
+        type = Utils.complex_field?(spec) ? FieldFactory.new(spec, @root).call : Utils.attribute_type_for(spec.as_type)
         opts = { collection: attribute_collection_for(spec) }.compact
         model_or_choice.attribute name, type, opts
       end
@@ -252,7 +252,7 @@ module Metaschema
       def define_json_mappings_for_define_assembly_item(spec)
         name = @root.mapping_name_in_json_for(spec)
         attr = @root.attribute_name_for(spec)
-        json_mapping.map name, to: attr
+        json_mapping.map name, to: attr, render_empty: :as_empty
       end
 
       def define_json_mappings_for_choice_item(spec)

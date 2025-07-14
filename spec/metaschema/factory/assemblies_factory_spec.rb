@@ -37,9 +37,9 @@ RSpec.describe Metaschema::Factory::AssembliesFactory do
         expect(model.attributes.values).to match(
           [
             be_an_attribute(:id, :string),
-            be_an_attribute(:name, be_a_model('Name:Class')),
-            be_an_attribute(:address, be_a_model('Address:Class')),
-            be_an_attribute(:website, be_a_model('Website:Class'))
+            be_an_attribute(:name, :string),
+            be_an_attribute(:address, :string),
+            be_an_attribute(:website, :string)
           ]
         )
 
@@ -100,7 +100,7 @@ RSpec.describe Metaschema::Factory::AssembliesFactory do
           [
             be_an_attribute(:id, :string),
             be_an_attribute(:remarks, be_a_model('Remarks:Class')),
-            be_an_attribute(:build_date, be_a_model('BuildDate:Class')),
+            be_an_attribute(:build_date, :string),
             be_an_attribute(:prop, be_a_model('Property:Class')),
             be_an_attribute(:motherboard, be_a_model('Motherboard:Class')),
             be_an_attribute(:usb_devices, be_a_model('UsbDevice:Class'), options: { collection: true })
