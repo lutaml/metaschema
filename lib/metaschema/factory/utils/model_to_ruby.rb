@@ -24,6 +24,7 @@ module Metaschema
 
           process_attributes
           process_mappings
+          process_custom_methods
 
           add 'end'
         end
@@ -35,6 +36,8 @@ module Metaschema
         def prev_line_start_with?(*args)
           @lines.last&.start_with?(*args)
         end
+
+        # == Attributes
 
         def process_attributes
           @model.attributes.each_value do |attr|
@@ -115,13 +118,15 @@ module Metaschema
           add "#{'  ' * deep}end"
         end
 
+        # == Mappings
+
         def process_mappings
           @model.mappings.each_key do |format|
             send :"process_#{format}_mapping"
           end
         end
 
-        # === JSON
+        # === JSON mapping
 
         def process_json_mapping
           add '' if prev_line_start_with?('  ')
@@ -234,7 +239,7 @@ module Metaschema
           }
         end
 
-        # === XML
+        # === XML mapping
 
         def process_xml_mapping
           add '' if prev_line_start_with?('  ')
@@ -299,6 +304,61 @@ module Metaschema
               add "    map_element #{rule.name.inspect}#{inspect_kwargs(opts, ', ')}"
             end
           end
+        end
+
+        # == Custom methods
+
+        def process_custom_methods
+          process_json_custom_methods
+        end
+
+        # === JSON custom methods
+
+        def process_json_custom_methods
+          json_mapping.mappings.each do |rule|
+            process_json_custom_methods_for(rule)
+          end
+        end
+
+        def process_json_custom_methods_for(rule)
+          process_custom_method_for(rule, :to)
+          process_custom_method_for(rule, :from)
+        end
+
+        def process_custom_method_for(rule, dir) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+          name = rule.custom_methods[dir]
+          return if name.nil?
+
+          code = method_expression(@model.instance_method(name))
+          return if code.nil?
+
+          code.gsub!('#{attr}', rule.to.to_s) # rubocop:disable Lint/InterpolationCheck
+          code.gsub!(/\battr\b/, rule.to.inspect)
+          code = simplify_method_expression(code)
+
+          add '' if prev_line_start_with?('  ')
+          code.each_line chomp: true do |line|
+            add "  #{line}"
+          end
+        end
+
+        def method_expression(method)
+          file, line = method.source_location
+          return if file.nil?
+
+          lines = File.readlines(file, chomp: true)[line.pred..]
+          indentation = Regexp.escape(lines.first[/^[\t ]*/])
+          ending = /^#{indentation}(?=\S)/
+          code = lines[0..(lines[1..].index { |n| ending.match?(n) }&.next)].join("\n")
+          code.gsub!(/^#{indentation}/, '')
+          code
+        end
+
+        def simplify_method_expression(code)
+          code = code.dup
+          code.sub!(/\S.*?\.(?=define_method\b)/, '')
+          code.gsub!(/(?<=:)"(\w+=?)"/, '\1')
+          code
         end
       end
     end

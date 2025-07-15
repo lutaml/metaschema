@@ -234,7 +234,47 @@ module Metaschema
       def define_json_mappings_for_field_item(ref)
         name = @root.mapping_name_in_json_for(ref)
         attr = @root.attribute_name_for(ref)
-        json_mapping.map name, to: attr
+        opts = { to: attr }
+
+        if ref.group_as&.in_json == 'SINGLETON_OR_ARRAY'
+          opts[:with] = {
+            to: define_json_custom_serialization_method_for(attr),
+            from: define_json_custom_deserialization_method_for(attr)
+          }
+        end
+
+        json_mapping.map name, **opts
+      end
+
+      def define_json_custom_serialization_method_for(attr) # rubocop:disable Metrics/AbcSize
+        @model.define_method :"#{attr}_to_json" do |model, doc|
+          value = model.public_send(:"#{attr}")
+          return if value.nil?
+
+          # serialize
+          attribute = model.class.attributes.fetch(attr)
+          value = attribute.serialize(value, :json, model.register)
+
+          # denormalize
+          value = value.first if value.one?
+
+          rule = model.class.mappings.fetch(:json).find_by_to(attr)
+          doc[rule.name] = value
+        end
+      end
+
+      def define_json_custom_deserialization_method_for(attr)
+        @model.define_method :"#{attr}_from_json" do |model, value|
+          # normalize
+          value = [value].compact unless value.is_a?(Array)
+
+          # deserialize
+          attribute = model.class.attributes.fetch(attr)
+          rule = model.class.mappings.fetch(:json).find_by_to(attr)
+          value = attribute.cast(value, :json, model.register, { polymorphic: rule&.polymorphic }.compact)
+
+          model.public_send(:"#{attr}=", value)
+        end
       end
 
       def define_json_mappings_for_define_field_item(spec)
