@@ -23,6 +23,10 @@ module Metaschema
         @model = model
       end
 
+      def self.content_attribute?(attribute)
+        attribute.name == CONTENT_ATTRIBUTE_NAME && attribute.type < Lutaml::Model::Type::Value
+      end
+
       def pretty_print_instance_variables
         (instance_variables - %i[@spec]).sort
       end
@@ -36,9 +40,10 @@ module Metaschema
       private
 
       def define_attributes
-        define_attributes_for :as_type
+        define_attributes_for_markup_data_type
         define_attributes_for :flag
         define_attributes_for :define_flag
+        define_attributes_for_simple_data_type
       end
 
       def define_attributes_for(name, spec = @spec, *args)
@@ -48,15 +53,27 @@ module Metaschema
         send :"define_attributes_for_#{name}", value, *args
       end
 
-      def define_attributes_for_as_type(data_type)
-        type = Utils.attribute_type_for(data_type)
+      def define_attributes_for_markup_data_type
+        return unless markup_data_type?
 
-        if Utils.model?(type)
-          @model.import_model_attributes(type)
-        else
-          name = CONTENT_ATTRIBUTE_NAME
-          @model.attribute name, type
-        end
+        type = Utils.attribute_type_for(@spec.as_type)
+        @model.import_model_attributes(type)
+      end
+
+      def markup_data_type?
+        %w[markup-line markup-multiline].include?(@spec.as_type)
+      end
+
+      def define_attributes_for_simple_data_type
+        return unless simple_data_type?
+
+        type = Utils.attribute_type_for(@spec.as_type)
+        name = CONTENT_ATTRIBUTE_NAME
+        @model.attribute name, type
+      end
+
+      def simple_data_type?
+        !markup_data_type?
       end
 
       %i[
@@ -101,9 +118,10 @@ module Metaschema
       def define_json_mapping
         define_json_root
 
-        define_json_mappings_for :as_type
+        define_json_mappings_for_markup_data_type
         define_json_mappings_for :flag
         define_json_mappings_for :define_flag
+        define_json_mappings_for_simple_data_type
       end
 
       def define_json_root
@@ -126,17 +144,19 @@ module Metaschema
         send :"define_json_mappings_for_#{name}", value
       end
 
-      def define_json_mappings_for_as_type(data_type)
-        type = Utils.attribute_type_for(data_type)
+      def define_json_mappings_for_markup_data_type
+        return unless markup_data_type?
 
-        if Utils.model?(type)
-          import_model_json_mappings(type)
-        else
-          # TODO: support @collapsible
-          name = content_mapping_name_in_json_for(data_type)
-          attr = CONTENT_ATTRIBUTE_NAME
-          json_mapping.map name, to: attr
-        end
+        type = Utils.attribute_type_for(@spec.as_type)
+        import_model_json_mappings(type)
+      end
+
+      def define_json_mappings_for_simple_data_type
+        return unless simple_data_type?
+
+        name = content_mapping_name_in_json_for(@spec.as_type)
+        attr = CONTENT_ATTRIBUTE_NAME
+        json_mapping.map name, to: attr
       end
 
       def content_mapping_name_in_json_for(data_type)
@@ -181,9 +201,10 @@ module Metaschema
         define_xml_root
         define_xml_namespace
 
-        define_xml_mappings_for :as_type
+        define_xml_mappings_for_markup_data_type
         define_xml_mappings_for :flag
         define_xml_mappings_for :define_flag
+        define_xml_mappings_for_simple_data_type
       end
 
       def define_xml_root
@@ -205,15 +226,18 @@ module Metaschema
         send :"define_xml_mappings_for_#{name}", value
       end
 
-      def define_xml_mappings_for_as_type(data_type)
-        type = Utils.attribute_type_for(data_type)
+      def define_xml_mappings_for_markup_data_type
+        return unless markup_data_type?
 
-        if Utils.model?(type)
-          import_model_xml_mappings(type)
-        else
-          attr = CONTENT_ATTRIBUTE_NAME
-          xml_mapping.map_content to: attr
-        end
+        type = Utils.attribute_type_for(@spec.as_type)
+        import_model_xml_mappings(type)
+      end
+
+      def define_xml_mappings_for_simple_data_type
+        return unless simple_data_type?
+
+        attr = CONTENT_ATTRIBUTE_NAME
+        xml_mapping.map_content to: attr
       end
 
       def import_model_xml_mappings(model)

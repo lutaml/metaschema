@@ -18,7 +18,6 @@ RSpec.describe Metaschema::Root do
       .sort
 
     wip_json_data_paths = %w[
-      spec/fixtures/metaschema/test-suite/schema-generation/collapsible/collapsible_test_multiple_PASS.json
       spec/fixtures/metaschema/test-suite/schema-generation/datatypes/charstrings_test_okay_PASS.json
       spec/fixtures/metaschema/test-suite/schema-generation/datatypes/datatypes-prose_test_valid_PASS.json
       spec/fixtures/metaschema/test-suite/schema-generation/group-as/group-as-by-key_test_valid_PASS.json

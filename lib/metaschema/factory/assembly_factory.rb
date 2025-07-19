@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
 require_relative '../refinements/object_try'
 require_relative 'field_factory'
+require_relative 'services/field_deserializer'
+require_relative 'services/field_serializer'
 require_relative 'utils'
 
 module Metaschema
@@ -234,53 +234,47 @@ module Metaschema
       def define_json_mappings_for_field_item(ref)
         name = @root.mapping_name_in_json_for(ref)
         attr = @root.attribute_name_for(ref)
-        opts = { to: attr }
-
-        if ref.group_as&.in_json == 'SINGLETON_OR_ARRAY'
-          opts[:with] = {
-            to: define_json_custom_serialization_method_for(attr),
-            from: define_json_custom_deserialization_method_for(attr)
-          }
-        end
-
+        opts = { to: attr, with: custom_methods_for_field(ref, attr, :json) }.compact
         json_mapping.map name, **opts
       end
 
-      def define_json_custom_serialization_method_for(attr) # rubocop:disable Metrics/AbcSize
-        @model.define_method :"#{attr}_to_json" do |model, doc|
-          value = model.public_send(:"#{attr}")
-          return if value.nil?
+      def custom_methods_for_field(element, attr, format)
+        group_as = element.group_as&.in_json
+        return if group_as.nil?
 
-          # serialize
-          attribute = model.class.attributes.fetch(attr)
-          value = attribute.serialize(value, :json, model.register)
+        collapsible = collapsible?(element)
+        return unless group_as == 'SINGLETON_OR_ARRAY' || collapsible
 
-          # denormalize
-          value = value.first if value.one?
+        opts = { group_as: group_as, collapsible: collapsible }
 
-          rule = model.class.mappings.fetch(:json).find_by_to(attr)
-          doc[rule.name] = value
+        {
+          to: define_custom_method_for_field_serialization(attr, format, **opts),
+          from: define_custom_method_for_field_deserialization(attr, format, **opts)
+        }
+      end
+
+      def collapsible?(element)
+        spec = element.respond_to?(:collapsible) ? element : @root.spec_for(element)
+        spec.collapsible == 'yes'
+      end
+
+      def define_custom_method_for_field_serialization(attr, format, group_as:, collapsible:)
+        @model.define_method :"#{attr}_to_#{format}" do |model, data|
+          FieldSerializer.call(model, attr, format, data, group_as: group_as, collapsible: collapsible)
         end
       end
 
-      def define_json_custom_deserialization_method_for(attr)
-        @model.define_method :"#{attr}_from_json" do |model, value|
-          # normalize
-          value = [value].compact unless value.is_a?(Array)
-
-          # deserialize
-          attribute = model.class.attributes.fetch(attr)
-          rule = model.class.mappings.fetch(:json).find_by_to(attr)
-          value = attribute.cast(value, :json, model.register, { polymorphic: rule&.polymorphic }.compact)
-
-          model.public_send(:"#{attr}=", value)
+      def define_custom_method_for_field_deserialization(attr, format, group_as:, collapsible:)
+        @model.define_method :"#{attr}_from_#{format}" do |model, data|
+          FieldDeserializer.call(model, attr, format, data, group_as: group_as, collapsible: collapsible)
         end
       end
 
       def define_json_mappings_for_define_field_item(spec)
         name = @root.mapping_name_in_json_for(spec)
         attr = @root.attribute_name_for(spec)
-        json_mapping.map name, to: attr
+        opts = { to: attr, with: custom_methods_for_field(spec, attr, :json) }.compact
+        json_mapping.map name, **opts
       end
 
       def define_json_mappings_for_assembly_item(ref)

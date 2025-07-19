@@ -321,25 +321,34 @@ module Metaschema
         end
 
         def process_json_custom_methods_for(rule)
-          process_custom_method_for(rule, :to)
-          process_custom_method_for(rule, :from)
+          process_custom_method_for(rule, :to, :json)
+          process_custom_method_for(rule, :from, :json)
         end
 
-        def process_custom_method_for(rule, dir) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+        def process_custom_method_for(rule, dir, format)
           name = rule.custom_methods[dir]
           return if name.nil?
 
           code = method_expression(@model.instance_method(name))
           return if code.nil?
 
-          code.gsub!('#{attr}', rule.to.to_s) # rubocop:disable Lint/InterpolationCheck
-          code.gsub!(/\battr\b/, rule.to.inspect)
+          code = gsub_expression(code, { attr: rule.to, format: format })
           code = simplify_method_expression(code)
 
           add '' if prev_line_start_with?('  ')
           code.each_line chomp: true do |line|
             add "  #{line}"
           end
+        end
+
+        def gsub_expression(code, vars)
+          code.gsub(
+            /#{vars.each_key.map { |n| "\\\#{#{n}}|\\b#{n}\\b" }.join('|')}/,
+            vars.each_with_object({}) do |(k, v), h|
+              h["\#{#{k}}"] = v.to_s
+              h[k.to_s] = v.inspect
+            end
+          )
         end
 
         def method_expression(method)
