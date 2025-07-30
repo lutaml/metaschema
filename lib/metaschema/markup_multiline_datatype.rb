@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 
+require_relative 'block_quote_type'
 require_relative 'image_type'
 require_relative 'inline_markup_type'
 require_relative 'list_type'
@@ -10,7 +11,7 @@ require_relative 'preformatted_type'
 require_relative 'table_type'
 
 module Metaschema
-  class BlockQuoteType < Lutaml::Model::Serializable
+  class MarkupMultilineDatatype < Lutaml::Model::Serializable
     attribute :h1, InlineMarkupType, collection: true
     attribute :h2, InlineMarkupType, collection: true
     attribute :h3, InlineMarkupType, collection: true
@@ -27,7 +28,7 @@ module Metaschema
     attribute :img, ImageType, collection: true
 
     xml do
-      root 'blockQuoteType', mixed: true
+      root 'MarkupMultilineDatatype', mixed: true
       # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_element 'h1', to: :h1

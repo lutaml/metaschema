@@ -11,7 +11,7 @@ module Metaschema
 
     xml do
       root 'tableRowType'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_element 'td', to: :td
       map_element 'th', to: :th

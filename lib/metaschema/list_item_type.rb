@@ -45,7 +45,7 @@ module Metaschema
 
     xml do
       root 'listItemType', mixed: true
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      # namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
 
       map_content to: :content
       map_element 'a', to: :a

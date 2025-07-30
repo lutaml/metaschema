@@ -28,7 +28,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "lutaml-model"
+  spec.add_dependency "commonmarker"
+  spec.add_dependency "kramdown"
+  spec.add_dependency "lutaml-model", "~> 0.7", ">= 0.7.4"
   spec.add_dependency "tabulo"
   spec.add_dependency "thor"
 end

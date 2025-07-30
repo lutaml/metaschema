@@ -1,1 +1,14 @@
 inherit_from: .rubocop_todo.yml
+
+plugins:
+  - rubocop-performance
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  SuggestExtensions:
+    rubocop-rake: false
+  TargetRubyVersion: 2.7
+
+Gemspec/RequireMFA:
+  Enabled: false

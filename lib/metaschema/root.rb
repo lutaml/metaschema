@@ -2,6 +2,7 @@
 
 require 'lutaml/model'
 
+require_relative 'factory/assemblies_factory'
 require_relative 'global_assembly_definition_type'
 require_relative 'global_field_definition_type'
 require_relative 'global_flag_definition_type'
@@ -44,6 +45,10 @@ module Metaschema
       map_element 'define-assembly', to: :define_assembly
       map_element 'define-field', to: :define_field
       map_element 'define-flag', to: :define_flag
+    end
+
+    def assemblies
+      @assemblies ||= Factory::AssembliesFactory.new(self).call
     end
   end
 end
