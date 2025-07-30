@@ -12,11 +12,6 @@ module Metaschema
 
       CONTENT_ATTRIBUTE_NAME = :content
 
-      JSON_VALUE_KEY_BY_DATA_TYPE = {
-        'markup-line' => 'RICHTEXT',
-        'markup-multiline' => 'prose'
-      }.tap { |n| n.default = 'STRVALUE' }.freeze
-
       def initialize(spec, root, model = Utils.create_model(spec.name))
         @spec = spec
         @root = root
@@ -154,15 +149,9 @@ module Metaschema
       def define_json_mappings_for_simple_data_type
         return unless simple_data_type?
 
-        name = content_mapping_name_in_json_for(@spec.as_type)
+        name = Utils.json_value_key_for_field(@spec)
         attr = CONTENT_ATTRIBUTE_NAME
         json_mapping.map name, to: attr
-      end
-
-      def content_mapping_name_in_json_for(data_type)
-        @spec.json_value_key ||
-          @spec.json_value_key_flag&.flag_ref ||
-          JSON_VALUE_KEY_BY_DATA_TYPE[data_type]
       end
 
       def import_model_json_mappings(model)

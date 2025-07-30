@@ -39,10 +39,9 @@ module Metaschema
         end
 
         def process_modules
-          (@model.included_modules.reverse.map(&:name) & %w[
-            Metaschema::Factory::AsMarkupLine
-            Metaschema::Factory::AsMarkupMultiline
-          ]).each do |mod|
+          @model.included_modules.reverse_each do |mod|
+            next unless mod.name&.start_with?('Metaschema::Factory::')
+
             add "  include #{mod}"
           end
         end

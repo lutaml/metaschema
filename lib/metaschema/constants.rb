@@ -30,6 +30,11 @@ module Metaschema
       'uuid' => :string
     }.freeze
 
+    JSON_VALUE_KEY_BY_DATA_TYPE = {
+      'markup-line' => 'RICHTEXT',
+      'markup-multiline' => 'prose'
+    }.tap { |n| n.default = 'STRVALUE' }.freeze
+
     RESERVED_ATTRIBUTE_NAMES = %w[
       class
     ].freeze

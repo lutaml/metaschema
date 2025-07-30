@@ -13,6 +13,7 @@ require_relative '../inline_field_definition_type'
 require_relative '../inline_flag_definition_type'
 require_relative '../refinements/object_try'
 require_relative 'assembly_factory'
+require_relative 'concerns/collection_by_key'
 require_relative 'field_factory'
 require_relative 'utils'
 
@@ -89,16 +90,18 @@ module Metaschema
         name = ref.group_as.name
         attr = COLLECTION_INSTANCES_ATTRIBUTE_NAME
         Utils.create_model(name, Lutaml::Model::Collection) do
+          include CollectionByKey if ref.group_as.in_json == 'BY_KEY'
+
           instances attr, type
 
           json do
-            root name
-
             if ref.group_as.in_json == 'BY_KEY'
               map_key to_instance: Utils.normalize_attribute_name(spec.json_key.flag_ref)
-              map_value as_attribute: FieldFactory::CONTENT_ATTRIBUTE_NAME
+              map_value as_attribute: Utils.json_value_key_for_field(spec) if spec.respond_to?(:as_type)
               map_instances to: attr
             else
+              root name
+
               map factory.effective_name_for(spec), to: attr
             end
           end

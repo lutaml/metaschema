@@ -18,7 +18,6 @@ RSpec.describe Metaschema::Root do
       .sort
 
     wip_json_data_paths = %w[
-      spec/fixtures/metaschema/test-suite/schema-generation/group-as/group-as-by-key_test_valid_PASS.json
       spec/fixtures/metaschema/test-suite/schema-generation/json-value-key/json-value-key-field_test_valid_PASS.json
     ]
 

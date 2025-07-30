@@ -37,6 +37,12 @@ module Metaschema
         end
       end
 
+      def self.json_value_key_for_field(field)
+        field.json_value_key ||
+          field.json_value_key_flag&.flag_ref ||
+          Constants::JSON_VALUE_KEY_BY_DATA_TYPE[field.as_type]
+      end
+
       def self.model?(object)
         object.is_a?(Class) && object.include?(Lutaml::Model::Serialize)
       end
