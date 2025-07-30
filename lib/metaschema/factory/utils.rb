@@ -3,6 +3,8 @@
 require 'lutaml/model'
 
 require_relative '../constants'
+require_relative 'concerns/as_markup_line'
+require_relative 'concerns/as_markup_multiline'
 
 module Metaschema
   module Factory
@@ -25,7 +27,14 @@ module Metaschema
       end
 
       def self.initial_type_for_field(field)
-        complex_field?(field) ? create_model(field.name) : attribute_type_for(field.as_type)
+        if complex_field?(field)
+          type = create_model(field.name)
+          type.include(AsMarkupLine) if field.as_type == 'markup-line'
+          type.include(AsMarkupMultiline) if field.as_type == 'markup-multiline'
+          type
+        else
+          attribute_type_for(field.as_type)
+        end
       end
 
       def self.model?(object)

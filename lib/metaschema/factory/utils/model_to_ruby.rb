@@ -22,6 +22,7 @@ module Metaschema
         def process_model
           add "class #{@model} < #{@model.superclass}"
 
+          process_modules
           process_attributes
           process_mappings
           process_custom_methods
@@ -37,9 +38,20 @@ module Metaschema
           @lines.last&.start_with?(*args)
         end
 
+        def process_modules
+          (@model.included_modules.reverse.map(&:name) & %w[
+            Metaschema::Factory::AsMarkupLine
+            Metaschema::Factory::AsMarkupMultiline
+          ]).each do |mod|
+            add "  include #{mod}"
+          end
+        end
+
         # == Attributes
 
         def process_attributes
+          add '' if prev_line_start_with?('  ') && @model.attributes.any?
+
           @model.attributes.each_value do |attr|
             choice = attr.options[:choice]
 
