@@ -1,13 +1,5 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
-require_relative 'anchor_type'
-require_relative 'code_type'
-require_relative 'image_type'
-require_relative 'inline_markup_type'
-require_relative 'insert_type'
-
 module Metaschema
   class AllowedValueType < Lutaml::Model::Serializable
     attribute :content, :string
@@ -27,24 +19,25 @@ module Metaschema
     attribute :img, ImageType, collection: true
 
     xml do
-      root 'AllowedValueType', mixed: true
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "AllowedValueType"
+      mixed_content
+      namespace ::Metaschema::Namespace
 
       map_content to: :content
-      map_attribute 'value', to: :value
-      map_attribute 'deprecated', to: :deprecated
-      map_element 'a', to: :a
-      map_element 'insert', to: :insert
-      map_element 'br', to: :br
-      map_element 'code', to: :code
-      map_element 'em', to: :em
-      map_element 'i', to: :i
-      map_element 'b', to: :b
-      map_element 'strong', to: :strong
-      map_element 'sub', to: :sub
-      map_element 'sup', to: :sup
-      map_element 'q', to: :q
-      map_element 'img', to: :img
+      map_attribute "value", to: :value
+      map_attribute "deprecated", to: :deprecated
+      map_element "a", to: :a
+      map_element "insert", to: :insert
+      map_element "br", to: :br
+      map_element "code", to: :code
+      map_element "em", to: :em
+      map_element "i", to: :i
+      map_element "b", to: :b
+      map_element "strong", to: :strong
+      map_element "sub", to: :sub
+      map_element "sup", to: :sup
+      map_element "q", to: :q
+      map_element "img", to: :img
     end
   end
 end

@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
 module Metaschema
   class Import < Lutaml::Model::Serializable
     attribute :href, :string
 
     xml do
-      root 'import'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "import"
+      namespace ::Metaschema::Namespace
 
-      map_attribute 'href', to: :href
+      map_attribute "href", to: :href
     end
   end
 end

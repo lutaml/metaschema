@@ -1,14 +1,5 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
-require_relative 'allowed_values_type'
-require_relative 'constraint_let_type'
-require_relative 'expect_constraint_type'
-require_relative 'index_has_key_constraint_type'
-require_relative 'matches_constraint_type'
-require_relative 'remarks_type'
-
 module Metaschema
   class DefineFlagConstraintsType < Lutaml::Model::Serializable
     attribute :let, ConstraintLetType, collection: true
@@ -19,15 +10,16 @@ module Metaschema
     attribute :remarks, RemarksType
 
     xml do
-      root 'DefineFlagConstraintsType', mixed: true
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "DefineFlagConstraintsType"
+      mixed_content
+      namespace ::Metaschema::Namespace
 
-      map_element 'let', to: :let
-      map_element 'allowed-values', to: :allowed_values
-      map_element 'matches', to: :matches
-      map_element 'index-has-key', to: :index_has_key
-      map_element 'expect', to: :expect
-      map_element 'remarks', to: :remarks
+      map_element "let", to: :let
+      map_element "allowed-values", to: :allowed_values
+      map_element "matches", to: :matches
+      map_element "index-has-key", to: :index_has_key
+      map_element "expect", to: :expect
+      map_element "remarks", to: :remarks
     end
   end
 end
