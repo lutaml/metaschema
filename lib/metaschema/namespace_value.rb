@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 module Metaschema
-  class AnyType < Lutaml::Model::Serializable
+  class NamespaceValue < Lutaml::Model::Type::String
     xml do
-      element "AnyType"
       namespace ::Metaschema::Namespace
     end
   end

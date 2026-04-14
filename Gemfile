@@ -1,13 +1,16 @@
 # frozen_string_literal: true
 
-source 'https://rubygems.org'
+source "https://rubygems.org"
 
 # Specify your gem's dependencies in metaschema.gemspec
 gemspec
 
-gem 'nokogiri'
-gem 'rake', '~> 13.0'
-gem 'rspec', '~> 3.0'
-gem 'rubocop'
-gem 'rubocop-performance'
-gem 'xml-c14n'
+gem "canon"
+gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
+gem "nokogiri"
+gem "rake", "~> 13.0"
+gem "rspec", "~> 3.0"
+gem "rubocop"
+gem "rubocop-performance"
+gem "rubocop-rake"
+gem "rubocop-rspec"

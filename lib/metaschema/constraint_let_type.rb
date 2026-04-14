@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
-require_relative 'remarks_type'
-
 module Metaschema
   class ConstraintLetType < Lutaml::Model::Serializable
     attribute :var, :string
@@ -11,12 +7,12 @@ module Metaschema
     attribute :remarks, RemarksType
 
     xml do
-      root 'ConstraintLetType'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "ConstraintLetType"
+      namespace ::Metaschema::Namespace
 
-      map_attribute 'var', to: :var
-      map_attribute 'expression', to: :expression
-      map_element 'remarks', to: :remarks
+      map_attribute "var", to: :var
+      map_attribute "expression", to: :expression
+      map_element "remarks", to: :remarks
     end
   end
 end

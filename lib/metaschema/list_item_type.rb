@@ -1,17 +1,6 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
-require_relative 'anchor_type'
-# require_relative "block_quote_type"
-require_relative 'code_type'
-require_relative 'image_type'
-require_relative 'inline_markup_type'
-require_relative 'insert_type'
-# require_relative "list_type"
-require_relative 'ordered_list_type'
-require_relative 'preformatted_type'
-
+# #
 module Metaschema
   class ListType < Lutaml::Model::Serializable; end
   class BlockQuoteType < Lutaml::Model::Serializable; end
@@ -44,34 +33,35 @@ module Metaschema
     attribute :p, InlineMarkupType, collection: true
 
     xml do
-      root 'listItemType', mixed: true
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "listItemType"
+      mixed_content
+      namespace ::Metaschema::Namespace
 
       map_content to: :content
-      map_element 'a', to: :a
-      map_element 'insert', to: :insert
-      map_element 'br', to: :br
-      map_element 'code', to: :code
-      map_element 'em', to: :em
-      map_element 'i', to: :i
-      map_element 'b', to: :b
-      map_element 'strong', to: :strong
-      map_element 'sub', to: :sub
-      map_element 'sup', to: :sup
-      map_element 'q', to: :q
-      map_element 'img', to: :img
-      map_element 'ul', to: :ul
-      map_element 'ol', to: :ol
-      map_element 'pre', to: :pre
-      map_element 'hr', to: :hr
-      map_element 'blockquote', to: :blockquote
-      map_element 'h1', to: :h1
-      map_element 'h2', to: :h2
-      map_element 'h3', to: :h3
-      map_element 'h4', to: :h4
-      map_element 'h5', to: :h5
-      map_element 'h6', to: :h6
-      map_element 'p', to: :p
+      map_element "a", to: :a
+      map_element "insert", to: :insert
+      map_element "br", to: :br
+      map_element "code", to: :code
+      map_element "em", to: :em
+      map_element "i", to: :i
+      map_element "b", to: :b
+      map_element "strong", to: :strong
+      map_element "sub", to: :sub
+      map_element "sup", to: :sup
+      map_element "q", to: :q
+      map_element "img", to: :img
+      map_element "ul", to: :ul
+      map_element "ol", to: :ol
+      map_element "pre", to: :pre
+      map_element "hr", to: :hr
+      map_element "blockquote", to: :blockquote
+      map_element "h1", to: :h1
+      map_element "h2", to: :h2
+      map_element "h3", to: :h3
+      map_element "h4", to: :h4
+      map_element "h5", to: :h5
+      map_element "h6", to: :h6
+      map_element "p", to: :p
     end
   end
 end

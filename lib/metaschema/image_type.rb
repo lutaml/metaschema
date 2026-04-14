@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
 module Metaschema
   class ImageType < Lutaml::Model::Serializable
     attribute :alt, :string
@@ -9,12 +7,12 @@ module Metaschema
     attribute :title, :string
 
     xml do
-      root 'imageType'
-      namespace 'http://csrc.nist.gov/ns/oscal/metaschema/1.0'
+      element "imageType"
+      namespace ::Metaschema::Namespace
 
-      map_attribute 'alt', to: :alt
-      map_attribute 'src', to: :src
-      map_attribute 'title', to: :title
+      map_attribute "alt", to: :alt
+      map_attribute "src", to: :src
+      map_attribute "title", to: :title
     end
   end
 end
