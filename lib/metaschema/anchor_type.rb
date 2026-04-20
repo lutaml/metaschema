@@ -2,7 +2,7 @@
 
 module Metaschema
   class AnchorType < Lutaml::Model::Serializable
-    attribute :content, :string
+    attribute :content, :string, collection: true
     attribute :href, :string
     attribute :title, :string
     attribute :code, CodeType, collection: true

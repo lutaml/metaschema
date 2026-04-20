@@ -2,7 +2,7 @@
 
 module Metaschema
   class TableCellType < Lutaml::Model::Serializable
-    attribute :content, :string
+    attribute :content, :string, collection: true
     attribute :align, :string, default: -> { "left" }
     attribute :a, AnchorType, collection: true
     attribute :insert, InsertType, collection: true

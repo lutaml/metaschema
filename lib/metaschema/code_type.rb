@@ -2,7 +2,7 @@
 
 module Metaschema
   class CodeType < Lutaml::Model::Serializable
-    attribute :content, :string
+    attribute :content, :string, collection: true
     attribute :klass, :string
     attribute :a, AnchorType, collection: true
     attribute :insert, InsertType, collection: true
