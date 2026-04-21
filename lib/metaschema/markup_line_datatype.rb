@@ -2,7 +2,7 @@
 
 module Metaschema
   class MarkupLineDatatype < Lutaml::Model::Serializable
-    attribute :content, :string
+    attribute :content, :string, collection: true
     attribute :a, AnchorType, collection: true
     attribute :insert, InsertType, collection: true
     attribute :br, :string, collection: true

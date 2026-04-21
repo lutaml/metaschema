@@ -97,4 +97,12 @@ module Metaschema
   autoload :FormalName, "metaschema/formal_name"
   autoload :SchemaVersion, "metaschema/schema_version"
   autoload :ShortName, "metaschema/short_name"
+  autoload :AugmentType, "metaschema/augment_type"
+  autoload :ConstraintValidator, "metaschema/constraint_validator"
+  autoload :JsonSchemaGenerator, "metaschema/json_schema_generator"
+  autoload :MarkdownDocGenerator, "metaschema/markdown_doc_generator"
+  autoload :MetapathEvaluator, "metaschema/metapath_evaluator"
+  autoload :ModelGenerator, "metaschema/model_generator"
+  autoload :RubySourceEmitter, "metaschema/ruby_source_emitter"
+  autoload :TypeMapper, "metaschema/type_mapper"
 end

@@ -15,6 +15,7 @@ module Metaschema
     attribute :define_assembly, GlobalAssemblyDefinitionType, collection: true
     attribute :define_field, GlobalFieldDefinitionType, collection: true
     attribute :define_flag, GlobalFlagDefinitionType, collection: true
+    attribute :augment, AugmentType, collection: true
 
     xml do
       element "METASCHEMA"
@@ -34,6 +35,7 @@ module Metaschema
       map_element "define-assembly", to: :define_assembly
       map_element "define-field", to: :define_field
       map_element "define-flag", to: :define_flag
+      map_element "augment", to: :augment
     end
   end
 end

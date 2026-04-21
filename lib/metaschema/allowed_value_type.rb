@@ -2,7 +2,7 @@
 
 module Metaschema
   class AllowedValueType < Lutaml::Model::Serializable
-    attribute :content, :string
+    attribute :content, :string, collection: true
     attribute :value, :string
     attribute :deprecated, :string
     attribute :a, AnchorType, collection: true
