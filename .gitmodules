@@ -1,3 +1,6 @@
 [submodule "spec/fixtures/metaschema"]
 	path = spec/fixtures/metaschema
 	url = git@github.com:metaschema-framework/metaschema.git
+[submodule "spec/fixtures/oscal"]
+	path = spec/fixtures/oscal
+	url = https://github.com/usnistgov/OSCAL.git
