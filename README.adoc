@@ -28,15 +28,16 @@ Metaschema-defined information models in the future.
 
 == Features
 
-TODO: This list is a TODO list. None of them have been completed.
-
 . Parse, build and round-trip Metaschema XML files
 . Validate Metaschema XML files against the Metaschema XML Schema
 . Generate XML (XSD) and JSON Schemas from Metaschema XML files
-. Generate Lutaml::Model (Ruby) classes that allow access and manipulation of
-  Metaschema-defined information models.
+. Generate `Lutaml::Model::Serializable` Ruby classes from Metaschema XML
+  definitions, with full XML and JSON round-trip fidelity
 . Validate Metaschema-defined information models against the Metaschema XML
   Schema
+. Support for SINGLETON_OR_ARRAY field patterns via service object pipeline
+  (FieldSerializer / FieldDeserializer)
+. UNWRAPPED XML field handling with delegate mappings
 
 == Installation
 
@@ -93,6 +94,55 @@ ms.schema_version
 ms.assemblies
 # [Vendor, Computer, ...]
 ----
+
+== Model Generation
+
+The `Metaschema::ModelGenerator` generates Ruby classes from Metaschema XML
+definitions. It uses a factory-based architecture:
+
+[horizontal]
+`ModelGenerator`:: Orchestrator — handles imports, augments, and delegates to factories
+`FieldFactory`:: Creates field classes from Metaschema field definitions
+`AssemblyFactory`:: Creates assembly classes with XML and JSON mappings
+`FieldSerializer`:: Service object for normalizing field values to JSON
+`FieldDeserializer`:: Service object for denormalizing JSON values to field instances
+`CollapsiblesCollapser`:: Groups collapsible fields by shared flag values
+`Utils`:: Shared naming and utility helpers
+
+=== Generating Ruby source
+
+[source,ruby]
+----
+# Generate a single Ruby file with all classes
+source = Metaschema::ModelGenerator.to_ruby_source(
+  "oscal_complete_metaschema.xml",
+  module_name: "Oscal"
+)
+
+# Generate split files (one per class)
+files = Metaschema::ModelGenerator.to_ruby_source(
+  "oscal_complete_metaschema.xml",
+  module_name: "Oscal",
+  split: true
+)
+----
+
+=== Type System
+
+The `TypeMapper` maps Metaschema data types to Ruby/Lutaml::Model types:
+
+[horizontal]
+`string`, `token`, `uri`, etc.:: `:string`
+`integer`:: `:integer`
+`boolean`:: `:boolean`
+`date`, `date-time`:: `:date`, `:date_time`
+`markup-line`:: `Metaschema::MarkupLineDatatype`
+`markup-multiline`:: `Metaschema::MarkupMultilineDatatype`
+
+=== Dependencies
+
+* `lutaml-model ~> 0.8.0` — serialization framework
+* `moxml >= 0.1.15` — XML adapter (uses `namespace_validation_mode=` API)
 
 
 == Tests
