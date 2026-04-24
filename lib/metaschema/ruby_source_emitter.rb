@@ -365,17 +365,23 @@ module Metaschema
       # Content mapping
       content = xml_map.instance_variable_get(:@content_mapping)
       if content
-        lines << "      map_content to: :#{content.to}"
+        opts = ["to: :#{content.to}"]
+        opts << "delegate: :#{content.delegate}" if content.delegate
+        lines << "      map_content #{opts.join(', ')}"
       end
 
       # Attribute mappings
       xml_map.instance_variable_get(:@attributes)&.each do |xml_name, rule|
-        lines << "      map_attribute \"#{xml_name}\", to: :#{rule.to}"
+        opts = ["\"#{xml_name}\"", "to: :#{rule.to}"]
+        opts << "delegate: :#{rule.delegate}" if rule.delegate
+        lines << "      map_attribute #{opts.join(', ')}"
       end
 
       # Element mappings
       xml_map.instance_variable_get(:@elements)&.each do |xml_name, rule|
-        lines << "      map_element \"#{xml_name}\", to: :#{rule.to}"
+        opts = ["\"#{xml_name}\"", "to: :#{rule.to}"]
+        opts << "delegate: :#{rule.delegate}" if rule.delegate
+        lines << "      map_element #{opts.join(', ')}"
       end
 
       lines << "    end"
