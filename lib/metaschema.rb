@@ -63,6 +63,7 @@ module Metaschema
   autoload :ListItemType, "metaschema/list_item_type"
   autoload :ListType, "metaschema/list_type"
   autoload :MarkupLineDatatype, "metaschema/markup_line_datatype"
+  autoload :MarkupMultilineDatatype, "metaschema/markup_multiline_datatype"
   autoload :MatchesConstraintType, "metaschema/matches_constraint_type"
   autoload :MetaschemaImportType, "metaschema/metaschema_import_type"
   autoload :MetaschemaConstraints, "metaschema/metaschema_constraints"

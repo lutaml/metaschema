@@ -21,20 +21,33 @@ module Metaschema
       "dateTime" => :date_time,
       "date-with-timezone" => :date,
       "date-time-with-timezone" => :date_time,
+      "day-time-duration" => :string,
 
       # String subtypes
       "uuid" => :string,
       "uri" => :string,
+      "uri-reference" => :string,
       "email" => :string,
+      "email-address" => :string,
       "hostname" => :string,
       "ip-address" => :string,
+      "ip-v4-address" => :string,
+      "ip-v6-address" => :string,
+      "base64" => :string,
 
       # Markup types — use Metaschema's own types
       "markup-line" => Metaschema::MarkupLineDatatype,
-      "markup-multiline" => Metaschema::MarkupLineDatatype,
+      "markup-multiline" => Metaschema::MarkupMultilineDatatype,
     }.freeze
 
     MARKUP_TYPES = %w[markup-line markup-multiline].freeze
+
+    # Default JSON value key by data type. Determines the JSON property
+    # name that holds a field's content value when serialized.
+    JSON_VALUE_KEY = {
+      "markup-line" => "RICHTEXT",
+      "markup-multiline" => "prose",
+    }.freeze
 
     class << self
       def map(as_type)
@@ -47,6 +60,13 @@ module Metaschema
 
       def multiline?(as_type)
         as_type.to_s == "markup-multiline"
+      end
+
+      # Returns the default JSON value key for the given data type.
+      # E.g. "markup-line" -> "RICHTEXT", "markup-multiline" -> "prose",
+      # everything else -> "STRVALUE".
+      def json_value_key(as_type)
+        JSON_VALUE_KEY[as_type.to_s] || "STRVALUE"
       end
 
       # Register format-specific serializers for types that lutaml-model
