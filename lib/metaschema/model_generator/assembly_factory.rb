@@ -67,8 +67,9 @@ module Metaschema
           [f.ref, Utils.safe_attr(f.ref)] if f.ref
         end
 
-        unwrapped_mappings = child_mappings.select { |m| m[:unwrapped] }
-        wrapped_mappings = child_mappings.reject { |m| m[:unwrapped] }
+        unwrapped_mappings, wrapped_mappings = child_mappings.partition do |m|
+          m[:unwrapped]
+        end
 
         klass.class_eval do
           xml do
@@ -104,7 +105,7 @@ module Metaschema
 
         mapping.attributes.each do |rule|
           parent_klass.mappings[:xml].map_attribute rule.name, to: rule.to,
-                                                                delegate: attr_name
+                                                               delegate: attr_name
         end
 
         content_rule = mapping.content_mapping
@@ -115,7 +116,7 @@ module Metaschema
 
         mapping.elements.each do |rule|
           parent_klass.mappings[:xml].map_element rule.name, to: rule.to,
-                                                           delegate: attr_name
+                                                             delegate: attr_name
         end
       end
 
@@ -339,7 +340,8 @@ module Metaschema
             end
 
             regular_assembly_mappings.each do |mapping|
-              map mapping[:json_name], to: mapping[:attr_name], render_empty: true
+              map mapping[:json_name], to: mapping[:attr_name],
+                                       render_empty: true
             end
           end
         end
@@ -364,11 +366,11 @@ module Metaschema
                 instance.instance_variable_set("@#{attr_sym}", inst)
               else
                 instance.instance_variable_set("@#{attr_sym}",
-                                              field_klass.of_json(value))
+                                               field_klass.of_json(value))
               end
             elsif value
               instance.instance_variable_set("@#{attr_sym}",
-                                              has_flags ? field_klass.of_json(value) : field_klass.new(content: value))
+                                             has_flags ? field_klass.of_json(value) : field_klass.new(content: value))
             end
           end
 
@@ -404,12 +406,12 @@ module Metaschema
 
           klass.define_method(from_m) do |instance, value|
             Services::FieldDeserializer.call(instance, attr_sym, :json, value,
-                                              group_as: "SINGLETON_OR_ARRAY", collapsible: false)
+                                             group_as: "SINGLETON_OR_ARRAY", collapsible: false)
           end
 
           klass.define_method(to_m) do |instance, doc|
             Services::FieldSerializer.call(instance, attr_sym, :json, doc,
-                                            group_as: "SINGLETON_OR_ARRAY", collapsible: false)
+                                           group_as: "SINGLETON_OR_ARRAY", collapsible: false)
           end
 
           klass.class_eval do
@@ -485,12 +487,12 @@ module Metaschema
 
           klass.define_method(from_m) do |instance, value|
             Services::FieldDeserializer.call(instance, attr_sym, :json, value,
-                                              group_as: "SINGLETON_OR_ARRAY", collapsible: false)
+                                             group_as: "SINGLETON_OR_ARRAY", collapsible: false)
           end
 
           klass.define_method(to_m) do |instance, doc|
             Services::FieldSerializer.call(instance, attr_sym, :json, doc,
-                                            group_as: "SINGLETON_OR_ARRAY", collapsible: false)
+                                           group_as: "SINGLETON_OR_ARRAY", collapsible: false)
           end
 
           klass.class_eval do
@@ -692,7 +694,7 @@ module Metaschema
           mappings << mapping
         end
 
-        model.define_assembly &.each do |ad|
+        model.define_assembly&.each do |ad|
           next unless ad.name
 
           group_as = ad.group_as
@@ -909,7 +911,8 @@ attr_sym, json_key_flag)
 attr_sym, json_key_flag, grouped: false, child_attr: nil)
         key_attr = Utils.safe_attr(json_key_flag)
 
-        from_method = :"json_from_bykey_asm_#{attr_sym}_#{json_name.gsub('-', '_')}"
+        from_method = :"json_from_bykey_asm_#{attr_sym}_#{json_name.gsub('-',
+                                                                         '_')}"
         to_method = :"json_to_bykey_asm_#{attr_sym}_#{json_name.gsub('-', '_')}"
 
         parent_klass.define_method(from_method) do |instance, value|
@@ -1124,7 +1127,9 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
             FieldFactory.apply_markup_attributes(inline_klass)
           end
 
-          field_def.define_flag&.each { |f| @g.add_inline_flag(inline_klass, f) }
+          field_def.define_flag&.each do |f|
+            @g.add_inline_flag(inline_klass, f)
+          end
           field_def.flag&.each { |f| @g.add_flag_reference(inline_klass, f) }
 
           inline_name = field_def.name
@@ -1186,7 +1191,9 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
         elsif has_flags
           inline_klass = Class.new(Lutaml::Model::Serializable)
           inline_klass.attribute :content, content_type
-          field_def.define_flag&.each { |f| @g.add_inline_flag(inline_klass, f) }
+          field_def.define_flag&.each do |f|
+            @g.add_inline_flag(inline_klass, f)
+          end
           field_def.flag&.each { |f| @g.add_flag_reference(inline_klass, f) }
 
           flag_attr_maps = field_def.define_flag&.filter_map do |f|
@@ -1238,7 +1245,9 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
 
         inline_klass = Class.new(Lutaml::Model::Serializable)
 
-        assembly_def.define_flag&.each { |f| @g.add_inline_flag(inline_klass, f) }
+        assembly_def.define_flag&.each do |f|
+          @g.add_inline_flag(inline_klass, f)
+        end
         assembly_def.flag&.each { |f| @g.add_flag_reference(inline_klass, f) }
 
         process_model(inline_klass, assembly_def.model) if assembly_def.model
@@ -1275,7 +1284,8 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
 
         klass.attribute attr_name, inline_klass, collection: collection
 
-        build_inline_assembly_json(klass, inline_klass, inline_name, assembly_def)
+        build_inline_assembly_json(klass, inline_klass, inline_name,
+                                   assembly_def)
       end
 
       def collect_inline_child_mappings(assembly_def)
@@ -1487,7 +1497,9 @@ assembly_def)
           add_grouped_assembly_reference(klass, ar)
         end
         choice_group.field&.each { |fr| add_grouped_field_reference(klass, fr) }
-        choice_group.define_assembly&.each { |ad| add_inline_assembly(klass, ad) }
+        choice_group.define_assembly&.each do |ad|
+          add_inline_assembly(klass, ad)
+        end
         choice_group.define_field&.each { |fd| add_inline_field(klass, fd) }
       end
 
@@ -1557,7 +1569,8 @@ assembly_def)
         klass.define_singleton_method(:to_yaml) do |instance, options = {}|
           yaml_str = original_to_yaml.call(instance, options)
           data = YAML.safe_load(yaml_str,
-                                permitted_classes: [Date, DateTime, Time, Symbol])
+                                permitted_classes: [Date, DateTime, Time,
+                                                    Symbol])
           { json_root_name => data }.to_yaml
         end
 

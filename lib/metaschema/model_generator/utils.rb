@@ -43,7 +43,9 @@ module Metaschema
 
       # Assign a human-readable name to an anonymous class for debugging.
       def self.set_model_temporary_name(model, name)
-        display_name = name.gsub(/(?:^|[-._]+)./) { |n| n[-1].upcase } + ":Class"
+        display_name = name.gsub(/(?:^|[-._]+)./) do |n|
+          n[-1].upcase
+        end + ":Class"
 
         if model.respond_to?(:set_temporary_name)
           model.set_temporary_name(display_name)
