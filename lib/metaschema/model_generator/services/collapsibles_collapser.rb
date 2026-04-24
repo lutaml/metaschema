@@ -52,7 +52,9 @@ module Metaschema
         end
 
         def group_id_for(model)
-          @collapsible_attributes.transform_values { |attr| model.public_send(attr.name) }
+          @collapsible_attributes.transform_values do |attr|
+            model.public_send(attr.name)
+          end
         end
 
         def collapse_group(group, value)
