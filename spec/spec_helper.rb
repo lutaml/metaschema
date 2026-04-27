@@ -21,11 +21,8 @@ Lutaml::Model::Config.configure do |config|
   config.xml_adapter_type = :nokogiri
 end
 
-Canon::RSpecMatchers.configure do |config|
+Canon::Config.configure do |config|
   # Use spec_friendly profile which ignores comments and formatting differences
   # that don't affect semantic equivalence
-  config.xml_match_profile = :spec_friendly
-
-  # Only show normative (semantically significant) diffs, hide informational
-  config.diff_mode = :normative
+  config.xml.match.profile = :spec_friendly
 end
