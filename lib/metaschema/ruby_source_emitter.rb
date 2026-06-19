@@ -712,11 +712,11 @@ module Metaschema
         lines << "      parsed = items"
       end
 
-      if asm_attr.collection
-        lines << "      instance.instance_variable_set(:@#{attr_name}, parsed)"
-      else
-        lines << "      instance.instance_variable_set(:@#{attr_name}, parsed.first)"
-      end
+      lines << if asm_attr.collection
+                 "      instance.instance_variable_set(:@#{attr_name}, parsed)"
+               else
+                 "      instance.instance_variable_set(:@#{attr_name}, parsed.first)"
+               end
       lines << "    end"
       lines
     end
