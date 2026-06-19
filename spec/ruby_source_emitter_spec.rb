@@ -230,7 +230,7 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
 
   describe "OSCAL namespace emission" do
     let(:generator) do
-      gen = Metaschema::ModelGenerator.new
+      gen = described_class.new
       gen.instance_variable_set(:@namespace_uri,
                                 "http://csrc.nist.gov/ns/oscal/1.0")
       gen

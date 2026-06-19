@@ -362,7 +362,7 @@ module Metaschema
       open_idx = lines.index { |l| l.start_with?("module Metaschema") }
       close_idx = lines.rindex { |l| l.chomp == "end" }
       body = lines[(open_idx + 1)...close_idx]
-        .reject { |l| l =~ /^  class \w+ < Lutaml::Model::Serializable; end$/ }
+        .grep_v(/^  class \w+ < Lutaml::Model::Serializable; end$/)
         .map do |l|
           l.gsub("namespace ::Metaschema::Namespace",
                  "namespace #{@module_name}::Namespace")
