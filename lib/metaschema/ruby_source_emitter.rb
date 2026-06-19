@@ -33,6 +33,22 @@ module Metaschema
       p h1 h2 h3 h4 h5 h6 ul ol pre hr blockquote table
     ].freeze
 
+    # Shared Metaschema markup types are locked to the metaschema/1.0 namespace.
+    # lutaml-model requires a namespace on the model class (not per element), so
+    # an OSCAL document needs its own copies in the OSCAL namespace. Rather than
+    # forking the definitions, the emitter reads these source files and projects
+    # them into the generated module with the namespace swapped (single source of
+    # truth). Forward stubs are emitted for all of them to satisfy the circular
+    # references between the types.
+    OSCAL_MARKUP_TYPE_NAMES = %w[
+      InsertType ImageType AnchorType CodeType InlineMarkupType
+      ListType OrderedListType ListItemType PreformattedType
+      BlockQuoteType TableType TableRowType TableCellType
+    ].freeze
+
+    SHARED_MARKUP_TYPE_LOCAL_NAMES =
+      OSCAL_MARKUP_TYPE_NAMES.to_h { |n| ["Metaschema::#{n}", n] }.freeze
+
     def initialize(classes, module_name, generator)
       @classes = classes
       @module_name = module_name
@@ -47,6 +63,7 @@ module Metaschema
       files = {}
 
       source = emit_module_header
+      source += emit_oscal_markup_types
 
       # Emit anonymous types first (they're dependencies of named classes)
       @anon_name_map.each_value do |anon_name|
@@ -78,6 +95,7 @@ module Metaschema
         all_keys = ([root_key] + deps).uniq
 
         source = emit_module_header
+        source += emit_oscal_markup_types
 
         # Emit anonymous types needed by this root's dependency tree
         emit_anon_deps_for(all_keys, source)
@@ -101,6 +119,7 @@ module Metaschema
       remaining = sorted.except(*emitted)
       unless remaining.empty?
         source = emit_module_header
+        source += emit_oscal_markup_types
         remaining.each do |key, klass|
           next unless klass.is_a?(Class) && klass < Lutaml::Model::Serializable
 
@@ -118,29 +137,43 @@ module Metaschema
     def collect_anonymous_types(sorted)
       used_names = Set.new(sorted.map { |key, _| clean_class_name(key) })
 
-      sorted.each do |key, klass|
-        next unless klass.is_a?(Class) && klass < Lutaml::Model::Serializable
+      # Worklist so anonymous types nested inside other anonymous types (e.g. a
+      # markup-line title inside an inline role assembly) are named too, not just
+      # those directly under a named class.
+      queue = sorted.filter_map do |key, klass|
+        [clean_class_name(key), klass] if serializable?(klass)
+      end
 
+      until queue.empty?
+        parent_name, klass = queue.shift
         klass.attributes.each do |attr_name, attr|
           type = attr.type
-          next unless type.is_a?(Class) && type < Lutaml::Model::Serializable
+          next unless serializable?(type)
           next if @anon_name_map.key?(type)
           next if @classes.any? { |_, v| v == type }
           next if type.name && !type.name.empty? # Named framework type
 
-          # Anonymous inline type — assign a name
-          parent_name = clean_class_name(key)
-          base = "#{parent_name}#{camelize(attr_name.to_s)}"
-          name = base
-          suffix = 2
-          while used_names.include?(name)
-            name = "#{base}#{suffix}"
-            suffix += 1
-          end
+          name = unique_anon_name(used_names, parent_name, attr_name)
           used_names.add(name)
           @anon_name_map[type] = name
+          queue << [name, type]
         end
       end
+    end
+
+    def serializable?(type)
+      type.is_a?(Class) && type < Lutaml::Model::Serializable
+    end
+
+    def unique_anon_name(used_names, parent_name, attr_name)
+      base = "#{parent_name}#{camelize(attr_name.to_s)}"
+      name = base
+      suffix = 2
+      while used_names.include?(name)
+        name = "#{base}#{suffix}"
+        suffix += 1
+      end
+      name
     end
 
     def emit_anon_deps_for(keys, source)
@@ -233,7 +266,7 @@ module Metaschema
           ":#{snake_case(@anon_name_map[type])}"
         elsif type.name && !type.name.empty?
           # Framework type from another gem — use bare class reference
-          type.name.to_s
+          local_markup_name(type.name.to_s) || type.name.to_s
         else
           ":string"
         end
@@ -253,9 +286,23 @@ module Metaschema
           "#{@module_name}::#{@anon_name_map[type]}"
         else
           type_name = type.name
-          type_name && !type_name.empty? ? type_name : nil
+          local = local_markup_name(type_name.to_s) if type_name
+          if local
+            "#{@module_name}::#{local}"
+          else
+            type_name && !type_name.empty? ? type_name : nil
+          end
         end
       end
+    end
+
+    # When emitting OSCAL (namespace present), shared Metaschema markup types are
+    # replaced by the module-local OSCAL-namespaced copies. Returns the local
+    # class name, or nil when no remap applies.
+    def local_markup_name(qualified_name)
+      return nil unless @generator&.namespace_uri
+
+      SHARED_MARKUP_TYPE_LOCAL_NAMES[qualified_name]
     end
 
     def snake_case(str)
@@ -277,6 +324,54 @@ module Metaschema
             end
           end
       RUBY
+        .then { |header| header + emit_namespace_class }
+    end
+
+    def emit_namespace_class
+      ns = @generator&.namespace_uri
+      return "" if ns.nil? || ns.empty?
+
+      <<~RUBY
+        \n  class Namespace < Lutaml::Xml::Namespace
+            uri "#{ns}"
+            prefix_default nil
+          end
+      RUBY
+    end
+
+    def emit_oscal_markup_types
+      ns = @generator&.namespace_uri
+      return "" if ns.nil? || ns.empty?
+
+      stubs = OSCAL_MARKUP_TYPE_NAMES
+        .map { |name| "  class #{name} < Lutaml::Model::Serializable; end\n" }
+        .join
+      bodies = OSCAL_MARKUP_TYPE_NAMES.map { |name| project_markup_type(name) }
+      "\n#{stubs}#{bodies.join}"
+    end
+
+    # Reads a shared Metaschema markup type source and projects it into the
+    # generated module: drops the `module Metaschema`/`end` wrapper and the
+    # `class X < ...; end` forward stubs (re-emitted together up front), and
+    # swaps the namespace to the module-local OSCAL Namespace. The shared file
+    # stays the single source of truth.
+    def project_markup_type(name)
+      path = File.join(metaschema_lib_dir, "#{snake_case(name)}.rb")
+      lines = File.read(path).lines
+
+      open_idx = lines.index { |l| l.start_with?("module Metaschema") }
+      close_idx = lines.rindex { |l| l.chomp == "end" }
+      body = lines[(open_idx + 1)...close_idx]
+        .reject { |l| l =~ /^  class \w+ < Lutaml::Model::Serializable; end$/ }
+        .map do |l|
+          l.gsub("namespace ::Metaschema::Namespace",
+                 "namespace #{@module_name}::Namespace")
+        end
+      "\n#{body.join}"
+    end
+
+    def metaschema_lib_dir
+      @metaschema_lib_dir ||= File.dirname(__FILE__)
     end
 
     def derive_register_id
@@ -364,6 +459,11 @@ module Metaschema
 
       element_name = xml_map.instance_variable_get(:@element_name)
       lines << "      element \"#{element_name}\"" if element_name
+
+      ns = @generator&.namespace_uri
+      if element_name && ns && !ns.empty?
+        lines << "      namespace #{@module_name}::Namespace"
+      end
 
       if xml_map.instance_variable_get(:@mixed_content)
         lines << "      mixed_content"
@@ -462,6 +562,10 @@ module Metaschema
                    emit_field_soa_from_method(klass, method_name)
                  elsif ms.start_with?("json_soa_to_")
                    emit_field_soa_to_method(klass, method_name)
+                 elsif ms.start_with?("json_md_from_")
+                   emit_markup_from_method(klass, method_name)
+                 elsif ms.start_with?("json_md_to_")
+                   emit_markup_to_method(klass, method_name)
                  elsif ms.start_with?("json_from_bykey_asm_")
                    emit_bykey_asm_from_method(klass, method_name)
                  elsif ms.start_with?("json_to_bykey_asm_")
@@ -504,6 +608,8 @@ module Metaschema
       content = klass.attributes[:content]
       return [] unless content
 
+      return emit_markup_field_methods if markup_field?(klass)
+
       build = content.collection ? "new(content: [%s])" : "new(content: %s)"
 
       lines = []
@@ -517,6 +623,33 @@ module Metaschema
       end
 
       lines.concat(emit_field_collapse_methods) if plain_field?(klass)
+      lines
+    end
+
+    # A markup field carries text content plus inline/block markup elements;
+    # its JSON/YAML form is a single Markdown string, delegated to MarkupConverter.
+    def markup_field?(klass)
+      return false unless klass.attributes.key?(:content)
+
+      klass.attributes.each_key.any? { |name| MARKUP_ELEMENT_ATTRS.include?(name) }
+    end
+
+    def emit_markup_field_methods
+      lines = []
+      { of_json: "doc", from_json: "data",
+        of_yaml: "doc", from_yaml: "data" }.each do |method, param|
+        lines << ""
+        lines << "    def self.#{method}(#{param}, options = {})"
+        lines << "      return super(#{param}, options) if #{param}.is_a?(Hash) || #{param}.is_a?(Array)"
+        lines << "      Metaschema::MarkupConverter.from_markdown(self, #{param})"
+        lines << "    end"
+      end
+      %i[as_json as_yaml].each do |method|
+        lines << ""
+        lines << "    def self.#{method}(instance, options = {})"
+        lines << "      Metaschema::MarkupConverter.to_markdown(instance)"
+        lines << "    end"
+      end
       lines
     end
 
@@ -599,7 +732,13 @@ module Metaschema
 
       lines << "      current = instance.instance_variable_get(:@#{attr_name})"
       lines << "      if current.is_a?(Array)"
-      lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      if has_flags && tc
+        lines << "        doc[\"#{json_name}\"] = current.map do |item|"
+        lines << "          item.is_a?(Lutaml::Model::Serializable) ? #{tc}.as_json(item) : item"
+        lines << "        end"
+      else
+        lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      end
       lines << "      elsif current"
       if has_flags && tc
         lines << "        if current.is_a?(Lutaml::Model::Serializable)"
@@ -615,6 +754,46 @@ module Metaschema
 
       lines << "    end"
       lines
+    end
+
+    def emit_markup_to_method(klass, method_name)
+      json_name = find_json_name_for_to_method(klass, method_name)
+      attr_name = find_attr_for_method(klass, method_name)
+      return nil unless attr_name
+
+      [
+        "",
+        "    def #{method_name}(instance, doc)",
+        "      current = instance.instance_variable_get(:@#{attr_name})",
+        "      return if current.nil?",
+        "      doc[\"#{json_name}\"] = if current.is_a?(Array)",
+        "                          current.map { |m| Metaschema::MarkupConverter.to_markdown(m) }",
+        "                        else",
+        "                          Metaschema::MarkupConverter.to_markdown(current)",
+        "                        end",
+        "    end",
+      ]
+    end
+
+    def emit_markup_from_method(klass, method_name)
+      attr_name = find_attr_for_method(klass, method_name)
+      return nil unless attr_name
+
+      tc = type_constant(klass.attributes[attr_name.to_sym])
+      return nil unless tc
+
+      [
+        "",
+        "    def #{method_name}(instance, value)",
+        "      return if value.nil?",
+        "      parsed = if value.is_a?(Array)",
+        "                 value.map { |v| Metaschema::MarkupConverter.from_markdown(#{tc}, v) }",
+        "               else",
+        "                 Metaschema::MarkupConverter.from_markdown(#{tc}, value)",
+        "               end",
+        "      instance.instance_variable_set(:@#{attr_name}, parsed)",
+        "    end",
+      ]
     end
 
     def emit_field_soa_from_method(klass, method_name)

@@ -62,6 +62,7 @@ module Metaschema
   autoload :KeyField, "metaschema/key_field"
   autoload :ListItemType, "metaschema/list_item_type"
   autoload :ListType, "metaschema/list_type"
+  autoload :MarkupConverter, "metaschema/markup_converter"
   autoload :MarkupLineDatatype, "metaschema/markup_line_datatype"
   autoload :MarkupMultilineDatatype, "metaschema/markup_multiline_datatype"
   autoload :MatchesConstraintType, "metaschema/matches_constraint_type"

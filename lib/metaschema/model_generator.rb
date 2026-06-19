@@ -33,14 +33,17 @@ module Metaschema
 
       def to_ruby_source(metaschema_path, module_name:, base_path: nil,
 split: false)
-        classes = generate_from_file(metaschema_path, base_path: base_path)
-        emitter = RubySourceEmitter.new(classes, module_name, self)
+        base_path ||= File.dirname(File.expand_path(metaschema_path))
+        metaschema = Metaschema::Root.from_xml(File.read(metaschema_path))
+        generator = new
+        classes = generator.generate(metaschema, base_path: base_path)
+        emitter = RubySourceEmitter.new(classes, module_name, generator)
         split ? emitter.emit_split : emitter.emit
       end
     end
 
     # Shared state — accessed by FieldFactory and AssemblyFactory via @g
-    attr_reader :classes, :field_defs, :assembly_defs, :flag_defs
+    attr_reader :classes, :field_defs, :assembly_defs, :flag_defs, :namespace_uri
     attr_accessor :current_assembly_name
 
     def generate(metaschema, base_path: nil)
@@ -48,7 +51,7 @@ split: false)
       @flag_defs = {}
       @assembly_defs = {}
       @field_defs = {}
-      @namespace = metaschema.namespace
+      @namespace_uri = metaschema.namespace
       @current_assembly_name = nil
 
       # Resolve imports — merge definitions from imported modules
@@ -119,7 +122,7 @@ split: false)
 
       flag_name = flag_ref.ref
       flag_def = @flag_defs[flag_name]
-      attr_name = Utils.safe_attr(flag_name)
+      attr_name = Utils.safe_attr(flag_ref.use_name&.content || flag_name)
       type = flag_def ? TypeMapper.map(flag_def.as_type) : :string
       klass.attribute attr_name, type
     end

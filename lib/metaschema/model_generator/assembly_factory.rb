@@ -7,6 +7,14 @@ module Metaschema
     # model processing (fields, assemblies, choices), and custom
     # serialization callbacks (BY_KEY, SINGLETON_OR_ARRAY, json-value-key-flag).
     class AssemblyFactory
+      # Maps an AssemblyModelType child element name to its model accessor, used
+      # to walk model children in metaschema declaration order.
+      MODEL_CHILD_KINDS = {
+        "field" => :field, "assembly" => :assembly,
+        "define-field" => :define_field, "define-assembly" => :define_assembly,
+        "choice" => :choice, "choice-group" => :choice_group
+      }.freeze
+
       def initialize(assembly_def, generator)
         @assembly_def = assembly_def
         @g = generator
@@ -64,7 +72,10 @@ module Metaschema
           [f.name, Utils.safe_attr(f.name)] if f.name
         end
         flag_ref_maps = flag_refs.filter_map do |f|
-          [f.ref, Utils.safe_attr(f.ref)] if f.ref
+          next unless f.ref
+
+          name = f.use_name&.content || f.ref
+          [name, Utils.safe_attr(name)]
         end
 
         unwrapped_mappings, wrapped_mappings = child_mappings.partition do |m|
@@ -108,10 +119,14 @@ module Metaschema
                                                                delegate: attr_name
         end
 
+        # A markup-multiline field's text lives inside its block elements
+        # (<p> etc.), never directly under the wrapper. When delegated into an
+        # element-only (ordered) assembly, map_content is both unnecessary and
+        # rejected by lutaml-model, so skip it for non-mixed parents.
+        parent_mapping = parent_klass.mappings[:xml]
         content_rule = mapping.content_mapping
-        if content_rule
-          parent_klass.mappings[:xml].map_content to: content_rule.to,
-                                                  delegate: attr_name
+        if content_rule && parent_mapping.mixed_content?
+          parent_mapping.map_content to: content_rule.to, delegate: attr_name
         end
 
         mapping.elements.each do |rule|
@@ -130,56 +145,51 @@ module Metaschema
       end
 
       def collect_model_child_mappings(model)
-        mappings = []
-
-        model.field&.each do |field_ref|
-          ref_name = field_ref.ref
-          next unless ref_name
-
-          xml_name = field_ref.use_name&.content || ref_name
-          group_as = field_ref.group_as
-          grouped = group_as&.in_xml == "GROUPED"
-          unwrapped = !grouped && field_ref.in_xml == "UNWRAPPED"
-
-          mappings << build_child_mapping(xml_name, group_as, grouped, ref_name,
-                                          unwrapped: unwrapped)
+        ordered_model_children(model).flat_map do |kind, child|
+          case kind
+          when :field then [field_ref_xml_mapping(child)].compact
+          when :assembly then [assembly_ref_xml_mapping(child)].compact
+          when :define_field, :define_assembly
+            [inline_def_xml_mapping(child)].compact
+          when :choice then collect_choice_child_mappings(child)
+          when :choice_group then collect_choice_group_child_mappings(child)
+          else []
+          end
         end
+      end
 
-        model.assembly&.each do |assembly_ref|
-          ref_name = assembly_ref.ref
-          next unless ref_name
+      def field_ref_xml_mapping(field_ref)
+        ref_name = field_ref.ref
+        return nil unless ref_name
 
-          xml_name = @g.assembly_xml_element_name(assembly_ref)
-          group_as = assembly_ref.group_as
-          grouped = group_as&.in_xml == "GROUPED"
+        xml_name = field_ref.use_name&.content || ref_name
+        group_as = field_ref.group_as
+        grouped = group_as&.in_xml == "GROUPED"
+        unwrapped = !grouped && field_ref.in_xml == "UNWRAPPED"
+        build_child_mapping(xml_name, group_as, grouped, ref_name,
+                            unwrapped: unwrapped)
+      end
 
-          attr_name = grouped ? Utils.safe_attr(group_as.name) : Utils.safe_attr(ref_name)
-          mappings << { xml_name: grouped ? group_as.name : xml_name,
-                        attr_name: attr_name, grouped: grouped }
-        end
+      def assembly_ref_xml_mapping(assembly_ref)
+        ref_name = assembly_ref.ref
+        return nil unless ref_name
 
-        model.define_field&.each do |inline_def|
-          next unless inline_def.name
+        xml_name = @g.assembly_xml_element_name(assembly_ref)
+        group_as = assembly_ref.group_as
+        grouped = group_as&.in_xml == "GROUPED"
+        attr_name = grouped ? Utils.safe_attr(group_as.name) : Utils.safe_attr(ref_name)
+        { xml_name: grouped ? group_as.name : xml_name,
+          attr_name: attr_name, grouped: grouped }
+      end
 
-          mappings << { xml_name: inline_def.name,
-                        attr_name: Utils.safe_attr(inline_def.name), grouped: false }
-        end
+      def inline_def_xml_mapping(inline_def)
+        return nil unless inline_def.name
 
-        model.define_assembly&.each do |inline_def|
-          next unless inline_def.name
-
-          mappings << { xml_name: inline_def.name,
-                        attr_name: Utils.safe_attr(inline_def.name), grouped: false }
-        end
-
-        model.choice&.each do |c|
-          mappings.concat(collect_choice_child_mappings(c))
-        end
-        model.choice_group&.each do |cg|
-          mappings.concat(collect_choice_group_child_mappings(cg))
-        end
-
-        mappings
+        unwrapped = inline_def.respond_to?(:in_xml) &&
+          inline_def.in_xml == "UNWRAPPED"
+        { xml_name: inline_def.name,
+          attr_name: Utils.safe_attr(inline_def.name), grouped: false,
+          unwrapped: unwrapped }
       end
 
       def collect_choice_child_mappings(choice)
@@ -294,7 +304,10 @@ module Metaschema
           [f.name, Utils.safe_attr(f.name)] if f.name
         end
         flag_ref_maps = flag_refs.filter_map do |f|
-          [f.ref, Utils.safe_attr(f.ref)] if f.ref
+          next unless f.ref
+
+          name = f.use_name&.content || f.ref
+          [name, Utils.safe_attr(name)]
         end
 
         json_field_mappings = collect_json_field_mappings(assembly_def)
@@ -303,8 +316,9 @@ module Metaschema
         vk_flag_mappings = json_field_mappings.select { |m| m[:vk_flag] }
         by_key_mappings = json_field_mappings.select { |m| m[:by_key] }
         soa_mappings = json_field_mappings.select { |m| m[:singleton_or_array] }
+        markup_mappings = json_field_mappings.select { |m| m[:markup] }
         regular_field_mappings = json_field_mappings.reject do |m|
-          m[:vk_flag] || m[:by_key] || m[:singleton_or_array]
+          m[:vk_flag] || m[:by_key] || m[:singleton_or_array] || m[:markup]
         end
 
         assembly_by_key_mappings = json_assembly_mappings.select do |m|
@@ -339,12 +353,19 @@ module Metaschema
               end
             end
 
+            markup_mappings.each do |mapping|
+              map mapping[:json_name], to: mapping[:attr_name],
+                                       with: { to: mapping[:to_method], from: mapping[:from_method] }
+            end
+
             regular_assembly_mappings.each do |mapping|
               map mapping[:json_name], to: mapping[:attr_name],
                                        render_empty: true
             end
           end
         end
+
+        define_markup_callbacks(klass, markup_mappings)
 
         regular_field_mappings.each do |mapping|
           next unless mapping[:scalar]
@@ -530,6 +551,40 @@ module Metaschema
         end
       end
 
+      # Inline markup fields serialize to a single Markdown string in JSON/YAML
+      # but stay an inline-element model in XML. The class-level as_json on the
+      # field class is not reached for nested attributes, so the conversion is
+      # driven from the parent here via a with: callback.
+      def define_markup_callbacks(klass, markup_mappings)
+        markup_mappings.each do |mapping|
+          attr_sym = mapping[:attr_name]
+          json_name = mapping[:json_name]
+
+          klass.define_method(mapping[:to_method]) do |instance, doc|
+            current = instance.instance_variable_get("@#{attr_sym}")
+            next if current.nil?
+
+            doc[json_name] = if current.is_a?(Array)
+                               current.map { |m| Metaschema::MarkupConverter.to_markdown(m) }
+                             else
+                               Metaschema::MarkupConverter.to_markdown(current)
+                             end
+          end
+
+          klass.define_method(mapping[:from_method]) do |instance, value|
+            next if value.nil?
+
+            type = instance.class.attributes[attr_sym].type
+            parsed = if value.is_a?(Array)
+                       value.map { |v| Metaschema::MarkupConverter.from_markdown(type, v) }
+                     else
+                       Metaschema::MarkupConverter.from_markdown(type, value)
+                     end
+            instance.instance_variable_set("@#{attr_sym}", parsed)
+          end
+        end
+      end
+
       # ── JSON Mapping Collectors ────────────────────────────────────────
 
       def collect_json_field_mappings(assembly_def)
@@ -542,27 +597,35 @@ module Metaschema
       end
 
       def collect_model_json_field_mappings(model)
-        mappings = []
+        ordered_model_children(model).flat_map do |kind, child|
+          case kind
+          when :field then [build_field_json_mapping(child)]
+          when :define_field
+            child.name ? [build_inline_field_json_mapping(child)] : []
+          when :choice then collect_choice_json_field_mappings(child)
+          when :choice_group then collect_choice_group_json_field_mappings(child)
+          else []
+          end
+        end
+      end
 
-        model.field&.each { |fr| mappings << build_field_json_mapping(fr) }
-        model.define_field&.each do |fd|
+      def collect_choice_json_field_mappings(choice)
+        mappings = []
+        choice.field&.each { |fr| mappings << build_field_json_mapping(fr) }
+        choice.define_field&.each do |fd|
           mappings << build_inline_field_json_mapping(fd) if fd.name
         end
-        model.choice&.each do |c|
-          c.field&.each { |fr| mappings << build_field_json_mapping(fr) }
-          c.define_field&.each do |fd|
-            mappings << build_inline_field_json_mapping(fd) if fd.name
-          end
-        end
-        model.choice_group&.each do |cg|
-          cg.field&.each do |fr|
-            mappings << build_field_json_mapping(fr, cg.group_as)
-          end
-          cg.define_field&.each do |fd|
-            mappings << build_inline_field_json_mapping(fd) if fd.name
-          end
-        end
+        mappings
+      end
 
+      def collect_choice_group_json_field_mappings(choice_group)
+        mappings = []
+        choice_group.field&.each do |fr|
+          mappings << build_field_json_mapping(fr, choice_group.group_as)
+        end
+        choice_group.define_field&.each do |fd|
+          mappings << build_inline_field_json_mapping(fd) if fd.name
+        end
         mappings
       end
 
@@ -645,6 +708,14 @@ module Metaschema
             singleton_or_array: true, field_klass: field_klass,
             to_method: :"json_soa_to_#{method_suffix}",
             from_method: :"json_soa_from_#{method_suffix}"
+          }
+        elsif TypeMapper.markup?(field_def.as_type) ||
+            TypeMapper.multiline?(field_def.as_type)
+          method_suffix = "#{attr_name}_#{json_name.gsub('-', '_')}"
+          {
+            json_name: json_name, attr_name: attr_name, markup: true,
+            to_method: :"json_md_to_#{method_suffix}",
+            from_method: :"json_md_from_#{method_suffix}"
           }
         else
           { json_name: json_name, attr_name: attr_name, scalar: false }
@@ -1012,24 +1083,53 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
 
       # ── Model Processing ──────────────────────────────────────────────
 
+      # OSCAL XML is element-ordered; the metaschema records its model children
+      # (field/assembly/define-field/define-assembly/choice/choice-group) in
+      # declaration order via AssemblyModelType's element_order. Generated
+      # attributes, XML map_element, and JSON maps must follow that same order so
+      # a canonically-ordered source round-trips through JSON/YAML (which carry no
+      # order hint) back to canonically-ordered XML. This walk is the single
+      # source of that order, consumed by process_model, the XML element mapping,
+      # and the JSON field-mapping collector.
+      def ordered_model_children(model)
+        queues = MODEL_CHILD_KINDS.values.to_h do |kind|
+          [kind, (model.public_send(kind) || []).dup]
+        end
+
+        order = model.respond_to?(:element_order) ? model.element_order : nil
+        unless order
+          return queues.flat_map { |kind, items| items.map { |i| [kind, i] } }
+        end
+
+        order.filter_map do |node|
+          kind = MODEL_CHILD_KINDS[node.name]
+          next unless kind
+
+          item = queues[kind].shift
+          [kind, item] if item
+        end
+      end
+
       def process_model(klass, model)
         unless klass.instance_variable_defined?(:@occurrence_constraints)
           klass.instance_variable_set(:@occurrence_constraints, {})
         end
         occ = klass.instance_variable_get(:@occurrence_constraints)
 
-        model.field&.each do |fr|
-          add_field_reference(klass, fr)
-          record_occurrence_constraint(occ, fr)
+        ordered_model_children(model).each do |kind, child|
+          case kind
+          when :field
+            add_field_reference(klass, child)
+            record_occurrence_constraint(occ, child)
+          when :assembly
+            add_assembly_reference(klass, child)
+            record_occurrence_constraint(occ, child)
+          when :define_field then add_inline_field(klass, child)
+          when :define_assembly then add_inline_assembly(klass, child)
+          when :choice then process_choice(klass, child)
+          when :choice_group then process_choice_group(klass, child)
+          end
         end
-        model.assembly&.each do |ar|
-          add_assembly_reference(klass, ar)
-          record_occurrence_constraint(occ, ar)
-        end
-        model.define_field&.each { |fd| add_inline_field(klass, fd) }
-        model.define_assembly&.each { |ad| add_inline_assembly(klass, ad) }
-        model.choice&.each { |c| process_choice(klass, c) }
-        model.choice_group&.each { |cg| process_choice_group(klass, cg) }
         add_any_content(klass) if model.any
 
         unless klass.method_defined?(:validate_occurrences)
@@ -1233,8 +1333,35 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
 
           klass.attribute attr_name, inline_klass, collection: collection
         else
-          klass.attribute attr_name, content_type, collection: collection
+          add_simple_inline_field(klass, field_def, attr_name, content_type,
+                                  collection)
         end
+      end
+
+      # A plain (no-flag, non-markup) inline define-field still maps to an XML
+      # element that inherits the document namespace. A bare :string attribute
+      # serializes as <name xmlns=""> (no namespace), so wrap it in a tiny
+      # namespaced field class whose JSON/YAML form stays a scalar.
+      def add_simple_inline_field(klass, field_def, attr_name, content_type,
+                                  collection)
+        inline_name = field_def.name
+        inline_vk = field_def.json_value_key ||
+          TypeMapper.json_value_key(field_def.as_type)
+        inline_klass = Class.new(Lutaml::Model::Serializable)
+        inline_klass.attribute :content, content_type
+        inline_klass.class_eval do
+          xml do
+            element inline_name
+            map_content to: :content
+          end
+          key_value do
+            root inline_name
+            map inline_vk, to: :content
+          end
+        end
+
+        @g.classes[@g.scoped_field_name(field_def.name)] = inline_klass
+        klass.attribute attr_name, inline_klass, collection: collection
       end
 
       def add_inline_assembly(klass, assembly_def)
