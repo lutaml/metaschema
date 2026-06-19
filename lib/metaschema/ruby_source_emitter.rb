@@ -599,7 +599,13 @@ module Metaschema
 
       lines << "      current = instance.instance_variable_get(:@#{attr_name})"
       lines << "      if current.is_a?(Array)"
-      lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      if has_flags && tc
+        lines << "        doc[\"#{json_name}\"] = current.map do |item|"
+        lines << "          item.is_a?(Lutaml::Model::Serializable) ? #{tc}.as_json(item) : item"
+        lines << "        end"
+      else
+        lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      end
       lines << "      elsif current"
       if has_flags && tc
         lines << "        if current.is_a?(Lutaml::Model::Serializable)"
