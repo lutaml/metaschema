@@ -25,6 +25,14 @@ module Metaschema
                        symbol].freeze
     RESERVED_CLASS_NAMES = %w[Base Hash Method Object Class Module].freeze
 
+    # Inline-markup element attributes added to markup-line / markup-multiline
+    # field classes. A field whose only attributes are :content plus these is
+    # "plain" -- its JSON/YAML form is a single scalar, not an object.
+    MARKUP_ELEMENT_ATTRS = %i[
+      a insert br code em i b strong sub sup q img
+      p h1 h2 h3 h4 h5 h6 ul ol pre hr blockquote table
+    ].freeze
+
     def initialize(classes, module_name, generator)
       @classes = classes
       @module_name = module_name
@@ -319,6 +327,9 @@ module Metaschema
       kv_source = emit_key_value_mapping(klass)
       lines.concat(kv_source) if kv_source
 
+      # Field scalar (de)serialization + plain-field serialize collapse
+      lines.concat(emit_field_scalar_methods(klass))
+
       # Custom methods for with: callbacks
       custom_methods = emit_custom_methods(klass)
       lines.concat(custom_methods) if custom_methods.any?
@@ -437,6 +448,7 @@ module Metaschema
       methods = []
       custom_method_names = (klass.instance_methods(false) - Lutaml::Model::Serializable.instance_methods)
         .select { |m| m.to_s.start_with?("json_") }
+        .sort_by { |m| custom_method_sort_key(m) }
 
       return methods if custom_method_names.empty?
 
@@ -471,6 +483,61 @@ module Metaschema
       end
 
       methods
+    end
+
+    # Stable, generator-version-independent ordering for emitted custom
+    # callbacks. Groups a field's from/to together (from first) and orders by
+    # the attribute subject, so regenerated source diffs reflect only real
+    # changes rather than incidental instance_methods ordering.
+    def custom_method_sort_key(method_name)
+      name = method_name.to_s
+      direction = name.include?("_from_") ? 0 : 1
+      [name.sub("_from_", "_").sub("_to_", "_"), direction]
+    end
+
+    # Field classes (those with a :content attribute) carry a scalar value in
+    # JSON/YAML, not an object. Emit format singletons that accept a scalar on
+    # the way in (wrapping it as content) and collapse a plain field back to a
+    # bare scalar on the way out. The model type stays the same; only the
+    # serialized form differs per format.
+    def emit_field_scalar_methods(klass)
+      content = klass.attributes[:content]
+      return [] unless content
+
+      build = content.collection ? "new(content: [%s])" : "new(content: %s)"
+
+      lines = []
+      { of_json: "doc", from_json: "data",
+        of_yaml: "doc", from_yaml: "data" }.each do |method, param|
+        lines << ""
+        lines << "    def self.#{method}(#{param}, options = {})"
+        lines << "      return super(#{param}, options) if #{param}.is_a?(Hash) || #{param}.is_a?(Array)"
+        lines << "      #{format(build, param)}"
+        lines << "    end"
+      end
+
+      lines.concat(emit_field_collapse_methods) if plain_field?(klass)
+      lines
+    end
+
+    def plain_field?(klass)
+      klass.attributes.each_key.all? do |name|
+        name == :content || MARKUP_ELEMENT_ATTRS.include?(name)
+      end
+    end
+
+    def emit_field_collapse_methods
+      %i[as_json as_yaml].flat_map do |method|
+        [
+          "",
+          "    def self.#{method}(instance, options = {})",
+          "      result = super(instance, options)",
+          "      return result unless result.is_a?(Hash) && result.keys == [\"content\"]",
+          "      value = result[\"content\"]",
+          "      value.is_a?(Array) && value.length == 1 ? value.first : value",
+          "    end",
+        ]
+      end
     end
 
     def emit_scalar_from_method(klass, method_name)
@@ -532,7 +599,13 @@ module Metaschema
 
       lines << "      current = instance.instance_variable_get(:@#{attr_name})"
       lines << "      if current.is_a?(Array)"
-      lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      if has_flags && tc
+        lines << "        doc[\"#{json_name}\"] = current.map do |item|"
+        lines << "          item.is_a?(Lutaml::Model::Serializable) ? #{tc}.as_json(item) : item"
+        lines << "        end"
+      else
+        lines << "        doc[\"#{json_name}\"] = current.map { |item| item.respond_to?(:content) ? item.content : item }"
+      end
       lines << "      elsif current"
       if has_flags && tc
         lines << "        if current.is_a?(Lutaml::Model::Serializable)"
@@ -645,7 +718,11 @@ module Metaschema
         lines << "      parsed = items"
       end
 
-      lines << "      instance.instance_variable_set(:@#{attr_name}, parsed)"
+      lines << if asm_attr.collection
+                 "      instance.instance_variable_set(:@#{attr_name}, parsed)"
+               else
+                 "      instance.instance_variable_set(:@#{attr_name}, parsed.first)"
+               end
       lines << "    end"
       lines
     end
@@ -664,22 +741,22 @@ module Metaschema
       lines << ""
       lines << "    def #{method_name}(instance, doc)"
       lines << "      current = instance.instance_variable_get(:@#{attr_name})"
-      lines << "      if current.is_a?(Array)"
-      lines << "        result = current.map do |item|"
+      lines << "      return if current.nil?"
+      lines << "      items = current.is_a?(Array) ? current : [current]"
+      lines << "      result = items.map do |item|"
 
       if tc
-        lines << "          if item.is_a?(Lutaml::Model::Serializable)"
-        lines << "            #{tc}.as_json(item)"
-        lines << "          else"
-        lines << "            item"
-        lines << "          end"
+        lines << "        if item.is_a?(Lutaml::Model::Serializable)"
+        lines << "          #{tc}.as_json(item)"
+        lines << "        else"
+        lines << "          item"
+        lines << "        end"
       else
-        lines << "          item.respond_to?(:to_h) ? item.to_h : item"
+        lines << "        item.respond_to?(:to_h) ? item.to_h : item"
       end
 
-      lines << "        end"
-      lines << "        doc[\"#{json_name}\"] = result.length == 1 ? result.first : result"
       lines << "      end"
+      lines << "      doc[\"#{json_name}\"] = result.length == 1 ? result.first : result"
       lines << "    end"
       lines
     end
