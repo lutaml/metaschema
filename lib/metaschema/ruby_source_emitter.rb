@@ -448,6 +448,7 @@ module Metaschema
       methods = []
       custom_method_names = (klass.instance_methods(false) - Lutaml::Model::Serializable.instance_methods)
         .select { |m| m.to_s.start_with?("json_") }
+        .sort_by { |m| custom_method_sort_key(m) }
 
       return methods if custom_method_names.empty?
 
@@ -482,6 +483,16 @@ module Metaschema
       end
 
       methods
+    end
+
+    # Stable, generator-version-independent ordering for emitted custom
+    # callbacks. Groups a field's from/to together (from first) and orders by
+    # the attribute subject, so regenerated source diffs reflect only real
+    # changes rather than incidental instance_methods ordering.
+    def custom_method_sort_key(method_name)
+      name = method_name.to_s
+      direction = name.include?("_from_") ? 0 : 1
+      [name.sub("_from_", "_").sub("_to_", "_"), direction]
     end
 
     # Field classes (those with a :content attribute) carry a scalar value in
