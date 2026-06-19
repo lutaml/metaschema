@@ -123,7 +123,7 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
     let(:emitter) { Metaschema::RubySourceEmitter.new({}, "Demo", nil) }
     let(:source) { emitter.send(:emit_field_scalar_methods, klass).join("\n") }
 
-    context "a non-collection content field" do
+    context "with a non-collection content field" do
       let(:klass) do
         Class.new(Lutaml::Model::Serializable) { attribute :content, :string }
       end
@@ -134,14 +134,14 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
         end
       end
 
-      it "passes a Hash/Array through to super and wraps a scalar as content" do
+      it "wraps a scalar into content", :aggregate_failures do
         expect(source).to include("data.is_a?(Hash) || data.is_a?(Array)")
         expect(source).to include("new(content: doc)")
         expect(source).to include("new(content: data)")
       end
     end
 
-    context "a collection content field (markup)" do
+    context "with a collection content field (markup)" do
       let(:klass) do
         Class.new(Lutaml::Model::Serializable) do
           attribute :content, :string, collection: true
@@ -153,14 +153,14 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
         expect(source).to include("new(content: [doc])")
       end
 
-      it "emits an as_json/as_yaml collapse for the plain markup field" do
+      it "emits an as_json/as_yaml collapse", :aggregate_failures do
         expect(source).to include("def self.as_json(")
         expect(source).to include("def self.as_yaml(")
         expect(source).to include('result.keys == ["content"]')
       end
     end
 
-    context "a field with a real flag (not plain)" do
+    context "with a real flag (not plain)" do
       let(:klass) do
         Class.new(Lutaml::Model::Serializable) do
           attribute :content, :string
@@ -173,7 +173,7 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
       end
     end
 
-    context "a non-field class (no :content)" do
+    context "without a content attribute" do
       let(:klass) do
         Class.new(Lutaml::Model::Serializable) { attribute :uuid, :string }
       end
