@@ -105,82 +105,68 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
       expect(catalog_source).to include("attribute :metadata, :metadata")
     end
 
-    it "emits scalar field (de)serialization on field classes" do
+    it "declares the scalar field contract on field classes" do
       source = files.values.first
-      expect(source).to include("def self.of_yaml(doc, options = {})")
-      expect(source).to include("new(content: doc)")
+      expect(source).to include('scalar_field "content", collection: true')
     end
 
-    it "stores a non-collection SINGLETON_OR_ARRAY attribute as a single object" do
+    it "puts the scalar field behaviour on Base, not on every field class" do
       source = files.values.first
-      # metadata is singular: the SOA from-callback unwraps to a single value
-      expect(source)
-        .to include("instance.instance_variable_set(:@metadata, parsed.first)")
+      expect(source.scan("def of_json(doc, options = {})").length).to eq(1)
+      expect(source.scan("def collapse_scalar(result)").length).to eq(1)
+    end
+
+    it "does not override from_json or from_yaml on field classes" do
+      source = files.values.first
+      # The inherited from_* already parses the document and delegates to of_*;
+      # overriding it made emitted classes swallow raw JSON and YAML text.
+      expect(source).not_to include("def self.from_json(")
+      expect(source).not_to include("def self.from_yaml(")
+    end
+
+    it "emits no endless method definitions" do
+      source = files.values.first
+      # The gemspec floor is Ruby 2.7; endless definitions are 3.0+.
+      expect(source).not_to match(/^\s*def [\w.]+\([^)]*\) =/)
+    end
+
+    it "rejects extra items for a non-collection SINGLETON_OR_ARRAY attribute" do
+      source = files.values.first
+      # metadata is singular: the runtime validates and raises rather than
+      # silently dropping the extras.
+      expect(source).to include(
+        "raise Lutaml::Model::CollectionTrueMissingError.new(:metadata, instance.class)",
+      )
     end
   end
 
-  describe "field scalar (de)serialization" do
-    let(:emitter) { Metaschema::RubySourceEmitter.new({}, "Demo", nil) }
-    let(:source) { emitter.send(:emit_field_scalar_methods, klass).join("\n") }
-
-    context "with a non-collection content field" do
-      let(:klass) do
-        Class.new(Lutaml::Model::Serializable) { attribute :content, :string }
-      end
-
-      it "emits scalar of_json/from_json/of_yaml/from_yaml" do
-        %w[of_json from_json of_yaml from_yaml].each do |m|
-          expect(source).to include("def self.#{m}(")
-        end
-      end
-
-      it "wraps a scalar into content", :aggregate_failures do
-        expect(source).to include("data.is_a?(Hash) || data.is_a?(Array)")
-        expect(source).to include("new(content: doc)")
-        expect(source).to include("new(content: data)")
-      end
+  describe "field scalar declarations" do
+    let(:source) do
+      described_class.to_ruby_source(
+        "spec/fixtures/scalar_fields_metaschema.xml", module_name: "TestScalar"
+      ).values.first
     end
 
-    context "with a collection content field (markup)" do
-      let(:klass) do
-        Class.new(Lutaml::Model::Serializable) do
-          attribute :content, :string, collection: true
-          attribute :em, :string, collection: true
-        end
-      end
-
-      it "array-wraps the scalar into content" do
-        expect(source).to include("new(content: [doc])")
-      end
-
-      it "emits an as_json/as_yaml collapse", :aggregate_failures do
-        expect(source).to include("def self.as_json(")
-        expect(source).to include("def self.as_yaml(")
-        expect(source).to include('result.keys == ["content"]')
-      end
+    it "keys the declaration off the field's own mapping key" do
+      expect(source).to include('scalar_field "VALUE"')
     end
 
-    context "with a real flag (not plain)" do
-      let(:klass) do
-        Class.new(Lutaml::Model::Serializable) do
-          attribute :content, :string
-          attribute :type, :string
-        end
-      end
-
-      it "does not emit a collapse (flagged fields keep object form)" do
-        expect(source).not_to include("def self.as_json(")
-      end
+    it "uses the content key when the field has neither flags nor a value key" do
+      plain = source[/class PlainText < Base.*?\n  end/m]
+      expect(plain).to include('scalar_field "content", collection: false')
     end
 
-    context "without a content attribute" do
-      let(:klass) do
-        Class.new(Lutaml::Model::Serializable) { attribute :uuid, :string }
-      end
+    it "marks markup content as a collection" do
+      rich = source[/class RichText < Base.*?\n  end/m]
+      expect(rich).to include('scalar_field "content", collection: true')
+    end
 
-      it "emits nothing" do
-        expect(emitter.send(:emit_field_scalar_methods, klass)).to eq([])
-      end
+    it "declares nothing on an assembly that carries a content member" do
+      # Holder has a :content attribute because it references a field named
+      # `content`. Shape alone cannot tell an assembly from a field.
+      holder = source[/class Holder < Base.*?\n  end/m]
+      expect(holder).to include("attribute :content")
+      expect(holder).not_to include("scalar_field")
     end
   end
 
@@ -204,6 +190,17 @@ RSpec.describe Metaschema::ModelGenerator, ".to_ruby_source" do
     it "is deterministic regardless of input order" do
       forward = %i[json_from_a_a json_to_a_a json_from_b_b json_to_b_b]
       expect(forward.sort_by(&key)).to eq(forward.reverse.sort_by(&key))
+    end
+
+    # No fixture has a `valid-from`-shaped field name, so this regression is
+    # unreachable through emitted source; a unit example is the only way to
+    # pin it.
+    it "does not read a direction token out of the middle of a field name" do
+      names = %i[json_to_valid_from_valid_from json_from_valid_from_valid_from]
+      expect(names.sort_by(&key)).to eq(%i[
+                                          json_from_valid_from_valid_from
+                                          json_to_valid_from_valid_from
+                                        ])
     end
   end
 end

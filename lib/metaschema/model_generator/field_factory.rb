@@ -40,61 +40,59 @@ module Metaschema
                         fd, is_multiline)
         build_field_json(klass, fd)
 
-        has_flags = fd.define_flag&.any? || fd.flag&.any?
-        has_json_vk = fd.json_value_key || fd.json_value_key_flag
-        is_collapsible = fd.collapsible == "yes"
-        value_key = fd.json_value_key || TypeMapper.json_value_key(fd.as_type)
-
-        klass.define_singleton_method(:of_json) do |data|
-          if data.is_a?(String)
-            new(content: data)
-          else
-            super(data)
-          end
-        end
-
-        klass.define_singleton_method(:from_json) do |data|
-          if data.is_a?(String)
-            new(content: data)
-          else
-            super(data)
-          end
-        end
-
-        if has_flags || has_json_vk || is_collapsible
-          flag_attr_names = (fd.define_flag || []).filter_map do |f|
-            Utils.safe_attr(f.name) if f.name
-          end +
-            (fd.flag || []).filter_map do |f|
-              Utils.safe_attr(f.ref) if f.ref
-            end
-
-          orig_as_json = klass.method(:as_json)
-          klass.define_singleton_method(:as_json) do |instance, options = {}|
-            result = orig_as_json.call(instance, options)
-
-            if is_collapsible && result.is_a?(Hash) && result[value_key].is_a?(Array) && result[value_key].length == 1
-              result[value_key] = result[value_key].first
-            end
-
-            if (has_flags || has_json_vk) && result.is_a?(Hash) && result.key?(value_key)
-              flags_present = flag_attr_names.any? do |attr|
-                val = instance.send(attr)
-                val && !(val.respond_to?(:using_default?) && val.using_default?)
-              end
-              unless flags_present
-                return result[value_key]
-              end
-            end
-
-            result
-          end
-        end
+        self.class.install_scalar_methods(klass)
 
         @g.apply_constraint_validation(klass, fd.constraint)
       end
 
       class << self
+        # Field classes carry a scalar value in JSON/YAML, not an object: a
+        # scalar coming in is wrapped as content, and a field whose serialized
+        # form has nothing but its value key collapses back to a bare scalar.
+        #
+        # Mirrors the `scalar_field` contract the Ruby source emitter writes onto
+        # the generated Base class. The two are deliberately separate
+        # implementations — the emitter mirrors templates, it does not import
+        # runtime behaviour — and the emitted parity spec pins them together.
+        def install_scalar_methods(klass)
+          collection = klass.attributes[:content].collection
+          key = scalar_key(klass)
+          # Marks this class as a metaschema field. An assembly can also carry a
+          # member named `content`, so shape alone cannot identify a field; the
+          # emitter reads this marker rather than guessing.
+          klass.instance_variable_set(:@metaschema_scalar_field, true)
+
+          %i[of_json of_yaml].each do |method|
+            klass.define_singleton_method(method) do |data, options = {}|
+              next super(data, options) if data.is_a?(Hash) || data.is_a?(Array)
+
+              new(content: collection ? [data] : data)
+            end
+          end
+
+          %i[as_json as_yaml].each do |method|
+            klass.define_singleton_method(method) do |instance, options = {}|
+              FieldFactory.collapse_scalar(key, super(instance, options))
+            end
+          end
+        end
+
+        def collapse_scalar(key, result)
+          return result unless key && result.is_a?(Hash) && result.keys == [key]
+
+          value = result[key]
+          value = value.first if value.is_a?(Array) && value.length == 1
+          value.is_a?(Array) ? result : value
+        end
+
+        # The key_value mapping key that carries :content. Derived from the
+        # mapping actually built, not from TypeMapper.json_value_key, which
+        # disagrees with it for fields that have neither flags nor a value key.
+        def scalar_key(klass)
+          klass.mappings_for(:json).instance_variable_get(:@mappings)
+            &.find { |_name, rule| rule.to == :content }&.first
+        end
+
         # Add inline markup attributes (a, code, em, etc.) for markup-line fields.
         def apply_markup_attributes(klass)
           klass.attribute :content, :string, collection: true

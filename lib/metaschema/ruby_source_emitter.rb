@@ -25,13 +25,10 @@ module Metaschema
                        symbol].freeze
     RESERVED_CLASS_NAMES = %w[Base Hash Method Object Class Module].freeze
 
-    # Inline-markup element attributes added to markup-line / markup-multiline
-    # field classes. A field whose only attributes are :content plus these is
-    # "plain" -- its JSON/YAML form is a single scalar, not an object.
-    MARKUP_ELEMENT_ATTRS = %i[
-      a insert br code em i b strong sub sup q img
-      p h1 h2 h3 h4 h5 h6 ul ol pre hr blockquote table
-    ].freeze
+    # Emitted callback names are json_<direction>_<subject>, optionally with a
+    # soa prefix. Anchors the direction token so a field named `valid-from`
+    # cannot be mistaken for the `from` direction.
+    CALLBACK_DIRECTION = /\A(json_(?:assembly_soa_|soa_)?)(from|to)_(.+)\z/
 
     def initialize(classes, module_name, generator)
       @classes = classes
@@ -275,6 +272,51 @@ module Metaschema
             def self.lutaml_default_register
               :#{register_id}
             end
+
+            class << self
+              # Declares a metaschema field class: in JSON and YAML it carries a
+              # bare scalar, not an object, unless one of its flags is set.
+              # `key` is the mapping key that carries :content.
+              def scalar_field(key, collection: false)
+                @scalar_key = key
+                @scalar_collection = collection
+              end
+
+              def of_json(doc, options = {})
+                scalar_content?(doc) ? wrap_scalar(doc) : super
+              end
+
+              def of_yaml(doc, options = {})
+                scalar_content?(doc) ? wrap_scalar(doc) : super
+              end
+
+              def as_json(instance, options = {})
+                collapse_scalar(super)
+              end
+
+              def as_yaml(instance, options = {})
+                collapse_scalar(super)
+              end
+
+              private
+
+              def scalar_content?(doc)
+                !@scalar_key.nil? && !doc.is_a?(::Hash) && !doc.is_a?(::Array)
+              end
+
+              def wrap_scalar(doc)
+                new(content: @scalar_collection ? [doc] : doc)
+              end
+
+              def collapse_scalar(result)
+                return result unless @scalar_key && result.is_a?(::Hash) &&
+                  result.keys == [@scalar_key]
+
+                value = result[@scalar_key]
+                value = value.first if value.is_a?(::Array) && value.length == 1
+                value.is_a?(::Array) ? result : value
+              end
+            end
           end
       RUBY
     end
@@ -327,8 +369,7 @@ module Metaschema
       kv_source = emit_key_value_mapping(klass)
       lines.concat(kv_source) if kv_source
 
-      # Field scalar (de)serialization + plain-field serialize collapse
-      lines.concat(emit_field_scalar_methods(klass))
+      lines.concat(emit_scalar_field_declaration(klass))
 
       # Custom methods for with: callbacks
       custom_methods = emit_custom_methods(klass)
@@ -491,53 +532,36 @@ module Metaschema
     # changes rather than incidental instance_methods ordering.
     def custom_method_sort_key(method_name)
       name = method_name.to_s
-      direction = name.include?("_from_") ? 0 : 1
-      [name.sub("_from_", "_").sub("_to_", "_"), direction]
+      match = CALLBACK_DIRECTION.match(name)
+      return [name, 0] unless match
+
+      prefix, direction, subject = match.captures
+      ["#{prefix}#{subject}", direction == "from" ? 0 : 1]
     end
 
-    # Field classes (those with a :content attribute) carry a scalar value in
-    # JSON/YAML, not an object. Emit format singletons that accept a scalar on
-    # the way in (wrapping it as content) and collapse a plain field back to a
-    # bare scalar on the way out. The model type stays the same; only the
-    # serialized form differs per format.
-    def emit_field_scalar_methods(klass)
-      content = klass.attributes[:content]
-      return [] unless content
+    # Field classes carry a scalar value in JSON/YAML, not an object. The
+    # behaviour lives on the emitted Base class; a field class only declares its
+    # mapping key and whether content is a collection.
+    #
+    # Reads the marker FieldFactory sets rather than looking for a :content
+    # attribute: an assembly can carry a member named `content` too, and
+    # collapsing one to a bare scalar would lose the rest of the object.
+    def emit_scalar_field_declaration(klass)
+      return [] unless klass.instance_variable_get(:@metaschema_scalar_field)
 
-      build = content.collection ? "new(content: [%s])" : "new(content: %s)"
+      key = scalar_key(klass)
+      return [] unless key
 
-      lines = []
-      { of_json: "doc", from_json: "data",
-        of_yaml: "doc", from_yaml: "data" }.each do |method, param|
-        lines << ""
-        lines << "    def self.#{method}(#{param}, options = {})"
-        lines << "      return super(#{param}, options) if #{param}.is_a?(Hash) || #{param}.is_a?(Array)"
-        lines << "      #{format(build, param)}"
-        lines << "    end"
-      end
-
-      lines.concat(emit_field_collapse_methods) if plain_field?(klass)
-      lines
+      collection = klass.attributes[:content].collection ? "true" : "false"
+      ["", "    scalar_field #{key.inspect}, collection: #{collection}"]
     end
 
-    def plain_field?(klass)
-      klass.attributes.each_key.all? do |name|
-        name == :content || MARKUP_ELEMENT_ATTRS.include?(name)
-      end
-    end
-
-    def emit_field_collapse_methods
-      %i[as_json as_yaml].flat_map do |method|
-        [
-          "",
-          "    def self.#{method}(instance, options = {})",
-          "      result = super(instance, options)",
-          "      return result unless result.is_a?(Hash) && result.keys == [\"content\"]",
-          "      value = result[\"content\"]",
-          "      value.is_a?(Array) && value.length == 1 ? value.first : value",
-          "    end",
-        ]
-      end
+    # The key_value mapping key that carries :content. Nil for a field whose key
+    # is chosen at runtime by a json-value-key-flag; such a field declares
+    # nothing and keeps object form, matching the runtime.
+    def scalar_key(klass)
+      klass.mappings_for(:json).instance_variable_get(:@mappings)
+        &.find { |_name, rule| rule.to == :content }&.first
     end
 
     def emit_scalar_from_method(klass, method_name)
@@ -718,11 +742,14 @@ module Metaschema
         lines << "      parsed = items"
       end
 
-      lines << if asm_attr.collection
-                 "      instance.instance_variable_set(:@#{attr_name}, parsed)"
-               else
-                 "      instance.instance_variable_set(:@#{attr_name}, parsed.first)"
-               end
+      if asm_attr.collection
+        lines << "      instance.instance_variable_set(:@#{attr_name}, parsed)"
+      else
+        lines << "      unless parsed.length == 1"
+        lines << "        raise Lutaml::Model::CollectionTrueMissingError.new(:#{attr_name}, instance.class)"
+        lines << "      end"
+        lines << "      instance.instance_variable_set(:@#{attr_name}, parsed.first)"
+      end
       lines << "    end"
       lines
     end
