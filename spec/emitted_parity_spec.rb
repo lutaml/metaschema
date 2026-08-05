@@ -3,8 +3,9 @@
 require "spec_helper"
 
 # Generates, evaluates and registers one metaschema's emitted source exactly
-# once per module name. Evaluating source and registering a register are both
-# process-global and irreversible, so re-entry must not repeat either.
+# once per module name. Evaluating the source and adding its Register to the
+# global registry are both process-global and irreversible, so re-entry must
+# not repeat either.
 module EmittedParity
   LOADED = {} # rubocop:disable Style/MutableConstant
 
