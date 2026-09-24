@@ -396,17 +396,21 @@ module Metaschema
       end
       return nil unless kv_map
 
-      mappings = kv_map.instance_variable_get(:@mappings)
-      return nil unless mappings && !mappings.empty?
+      # lutaml-model 0.8.56+ stores key-value rules as per-key arrays
+      # (when_attribute partitions share a wire key); the public `mappings`
+      # reader returns the flattened rules.
+      mappings = kv_map.mappings
+      return nil if mappings.nil? || mappings.empty?
 
       lines = []
       lines << ""
       lines << "    key_value do"
 
-      root_name = kv_map.instance_variable_get(:@root_name)
+      root_name = kv_map.root_name
       lines << "      root \"#{root_name}\"" if root_name && !root_name.empty?
 
-      mappings.each do |json_name, rule|
+      mappings.each do |rule|
+        json_name = rule.name
         custom = rule.custom_methods
         if custom && (custom[:from] || custom[:to])
           opts = []
@@ -420,7 +424,7 @@ module Metaschema
           opts << opts_parts.join
           lines << "      map \"#{json_name}\", #{opts.join(', ')}"
         else
-          render_empty = rule.instance_variable_get(:@render_empty)
+          render_empty = rule.render_empty
           lines << if render_empty
                      "      map \"#{json_name}\", to: :#{rule.to}, render_empty: true"
                    else
@@ -814,8 +818,9 @@ module Metaschema
       end
       return nil unless kv_map
 
-      mappings = kv_map.instance_variable_get(:@mappings)
-      mappings&.each do |json_name, rule|
+      mappings = kv_map.mappings
+      mappings&.each do |rule|
+        json_name = rule.name
         if rule.custom_methods[:to]&.to_s == method_name.to_s
           return json_name
         end
@@ -832,8 +837,9 @@ module Metaschema
       end
       return nil unless kv_map
 
-      mappings = kv_map.instance_variable_get(:@mappings)
-      mappings&.each do |json_name, rule|
+      mappings = kv_map.mappings
+      mappings&.each do |rule|
+        json_name = rule.name
         if rule.custom_methods[:from]&.to_s == method_name.to_s
           return json_name
         end
@@ -851,8 +857,8 @@ module Metaschema
       return nil unless kv_map
 
       ms = method_name.to_s
-      mappings = kv_map.instance_variable_get(:@mappings)
-      mappings&.each_value do |rule|
+      mappings = kv_map.mappings
+      mappings&.each do |rule|
         custom = rule.custom_methods
         if custom[:to]&.to_s == ms || custom[:from]&.to_s == ms
           return rule.to.to_s
