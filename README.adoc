@@ -139,6 +139,27 @@ The `TypeMapper` maps Metaschema data types to Ruby/Lutaml::Model types:
 `markup-line`:: `Metaschema::MarkupLineDatatype`
 `markup-multiline`:: `Metaschema::MarkupMultilineDatatype`
 
+=== Markup prose in JSON and YAML
+
+Generated models do not yet represent markup prose the way the NIST Metaschema
+specification defines it. The specification says `markup-line` and
+`markup-multiline` serialize to a *Markdown string* in JSON and YAML — see
+`spec/fixtures/metaschema/website/content/specification/datatypes.md`.
+
+What the generated models do instead:
+
+* A global markup field carries only its text content. Inline markup elements
+  (`em`, `a`, `code`, and the rest) are not represented at all — the JSON
+  mapping maps `content` and the flags, nothing else.
+* An inline markup field keeps those elements, as nested objects.
+
+Neither form is a Markdown string, so markup does not survive an
+XML -> JSON -> XML round trip intact. Prose that carries inline markup also
+keeps object form rather than collapsing to a bare scalar, because the object
+has more than its value key.
+
+Mapping markup to and from Markdown is follow-up work.
+
 === Dependencies
 
 * `lutaml-model ~> 0.8.0` — serialization framework

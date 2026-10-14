@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<METASCHEMA xmlns="http://csrc.nist.gov/ns/oscal/metaschema/1.0">
+    <schema-name>Scalar Fields</schema-name>
+    <schema-version>1.0</schema-version>
+    <short-name>scalar-fields</short-name>
+    <namespace>http://example.com/ns/scalar-fields</namespace>
+    <json-base-uri>http://example.com/ns/scalar-fields</json-base-uri>
+
+    <remarks>
+        <p>Covers every row of the field collapse matrix: a default "content" key, an explicit
+            json-value-key, a boolean flag, and multi-item markup content. The OSCAL fixtures
+            contain no json-value-key and no boolean flags, so the matrix cannot be made total
+            from them.</p>
+    </remarks>
+
+    <define-assembly name="holder">
+        <formal-name>Holder</formal-name>
+        <description>Carries one of each field shape.</description>
+        <root-name>HOLDER</root-name>
+        <model>
+            <field ref="plain-text"/>
+            <field ref="keyed-value"/>
+            <field ref="flagged-text"/>
+            <field ref="rich-text"/>
+            <field ref="content"/>
+        </model>
+    </define-assembly>
+
+    <define-field name="plain-text" as-type="string">
+        <formal-name>Plain text</formal-name>
+        <description>No flags and no value key, so its JSON key is "content".</description>
+    </define-field>
+
+    <define-field name="keyed-value" as-type="string">
+        <formal-name>Keyed value</formal-name>
+        <description>Carries an explicit json-value-key, so its JSON key is not "content".</description>
+        <json-value-key>VALUE</json-value-key>
+    </define-field>
+
+    <define-field name="flagged-text" as-type="string">
+        <formal-name>Flagged text</formal-name>
+        <description>Has a boolean flag, so a set flag keeps object form.</description>
+        <define-flag name="active" as-type="boolean">
+            <formal-name>Active</formal-name>
+            <description>A boolean flag, including when set to false.</description>
+        </define-flag>
+    </define-field>
+
+    <define-field name="rich-text" as-type="markup-multiline">
+        <formal-name>Rich text</formal-name>
+        <description>Multi-item prose content.</description>
+    </define-field>
+
+    <define-field name="content" as-type="string">
+        <formal-name>Content</formal-name>
+        <description>Gives the holder assembly a :content attribute, so "has a
+            content attribute" cannot be used to tell an assembly from a
+            field.</description>
+    </define-field>
+</METASCHEMA>

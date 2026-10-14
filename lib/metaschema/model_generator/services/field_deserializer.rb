@@ -6,7 +6,8 @@ module Metaschema
       # Deserializes a field value from the source format into a model instance.
       # Handles SINGLETON_OR_ARRAY normalization and collapsible field expansion.
       #
-      # Pipeline: normalize -> separate -> cast -> validate_collection -> transform
+      # Pipeline: normalize -> separate -> cast -> transform ->
+      #   unwrap_singleton -> validate_collection
       class FieldDeserializer
         def initialize(model, attr, format, data, group_as:, collapsible:)
           @model = model
@@ -27,9 +28,9 @@ module Metaschema
           data = normalize(@data)
           data = separate(data) if @collapsible
           data = cast(data)
-          validate_collection!(data)
           data = transform(data)
           data = unwrap_singleton(data)
+          validate_collection!(data)
 
           @model.public_send(:"#{@attribute.name}=", data)
         end
