@@ -16,7 +16,7 @@ RSpec.describe Metaschema, ".generator_revision" do
       [RbConfig.ruby, *load_path, "-e",
        'require "metaschema"; Metaschema.generator_revision; ' \
        "print Metaschema::VERSION"],
-      err: %i[child out], &:read
+      err: File::NULL, &:read
     )
 
     expect(output).to eq(Metaschema::VERSION)
