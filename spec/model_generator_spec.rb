@@ -179,8 +179,6 @@ RSpec.describe Metaschema::ModelGenerator, "dynamic model creation" do
 
       instance2 = catalog_klass.from_json(json_out)
       expect(title_text(instance2)).to eq(title_text(instance1))
-    rescue StandardError => e
-      skip "JSON serialization issue: #{e.message}"
     end
   end
 
@@ -197,8 +195,6 @@ RSpec.describe Metaschema::ModelGenerator, "dynamic model creation" do
 
       instance2 = catalog_klass.from_yaml(yaml_out)
       expect(title_text(instance2)).to eq(title_text(instance1))
-    rescue StandardError => e
-      skip "YAML serialization issue: #{e.message}"
     end
   end
 

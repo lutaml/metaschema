@@ -351,13 +351,10 @@ module Metaschema
 
           field_klass = mapping[:field_klass]
           attr_sym = mapping[:attr_name]
-          has_flags = mapping[:has_flags]
 
           klass.define_method(mapping[:from_method]) do |instance, value|
             if value.is_a?(Array)
-              parsed = value.map do |v|
-                has_flags ? field_klass.of_json(v) : field_klass.new(content: v)
-              end
+              parsed = value.map { |v| field_klass.of_json(v) }
               instance.instance_variable_set("@#{attr_sym}", parsed)
             elsif value.is_a?(Hash)
               if value.empty?
@@ -370,7 +367,7 @@ module Metaschema
               end
             elsif value
               instance.instance_variable_set("@#{attr_sym}",
-                                             has_flags ? field_klass.of_json(value) : field_klass.new(content: value))
+                                             field_klass.of_json(value))
             end
           end
 
@@ -378,21 +375,20 @@ module Metaschema
             current = instance.instance_variable_get("@#{attr_sym}")
             if current.is_a?(Array)
               result = current.map do |item|
-                if has_flags && item.is_a?(Lutaml::Model::Serializable)
+                if item.is_a?(Lutaml::Model::Serializable)
                   field_klass.as_json(item)
                 else
-                  item.respond_to?(:content) ? item.content : item
+                  item
                 end
               end
               doc[mapping[:json_name]] = result
             elsif current
               if current.instance_variable_get(:@_was_empty_hash)
                 doc[mapping[:json_name]] = {}
-              elsif has_flags && current.is_a?(Lutaml::Model::Serializable)
+              elsif current.is_a?(Lutaml::Model::Serializable)
                 doc[mapping[:json_name]] = field_klass.as_json(current)
               else
-                val = current.respond_to?(:content) ? current.content : current
-                doc[mapping[:json_name]] = val
+                doc[mapping[:json_name]] = current
               end
             end
           end
@@ -1187,6 +1183,7 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
             end
           end
 
+          FieldFactory.install_scalar_methods(inline_klass)
           klass.attribute attr_name, inline_klass, collection: collection
         elsif has_flags
           inline_klass = Class.new(Lutaml::Model::Serializable)
@@ -1231,6 +1228,7 @@ attr_sym, json_key_flag, grouped: false, child_attr: nil)
           klass_name = @g.scoped_field_name(field_def.name)
           @g.classes[klass_name] = inline_klass
 
+          FieldFactory.install_scalar_methods(inline_klass)
           klass.attribute attr_name, inline_klass, collection: collection
         else
           klass.attribute attr_name, content_type, collection: collection

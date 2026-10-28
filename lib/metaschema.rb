@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "lutaml/model"
+require_relative "metaschema/version"
 
 module Metaschema
   class Error < StandardError; end
