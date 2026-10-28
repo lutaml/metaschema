@@ -89,8 +89,7 @@ module Metaschema
         # mapping actually built, not from TypeMapper.json_value_key, which
         # disagrees with it for fields that have neither flags nor a value key.
         def scalar_key(klass)
-          klass.mappings_for(:json).instance_variable_get(:@mappings)
-            &.find { |_name, rule| rule.to == :content }&.first
+          klass.mappings_for(:json).find_by_to(:content)&.name
         end
 
         # Add inline markup attributes (a, code, em, etc.) for markup-line fields.

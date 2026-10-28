@@ -53,7 +53,7 @@ end
 #
 # Every other emitter spec reads the source. Nothing loaded it and round-tripped
 # data, which is how the emitted/runtime divergences shipped.
-# rubocop:disable RSpec/DescribeClass
+# rubocop:disable-next RSpec/DescribeClass
 RSpec.describe "emitted source parity" do
   # ── Document level: emitted output must match dynamic output ────────
 
@@ -339,4 +339,3 @@ RSpec.describe "emitted source parity" do
     end
   end
 end
-# rubocop:enable RSpec/DescribeClass

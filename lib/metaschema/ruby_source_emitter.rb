@@ -571,8 +571,7 @@ module Metaschema
     # is chosen at runtime by a json-value-key-flag; such a field declares
     # nothing and keeps object form, matching the runtime.
     def scalar_key(klass)
-      klass.mappings_for(:json).instance_variable_get(:@mappings)
-        &.find { |_name, rule| rule.to == :content }&.first
+      klass.mappings_for(:json).find_by_to(:content)&.name
     end
 
     def emit_scalar_from_method(klass, method_name)
