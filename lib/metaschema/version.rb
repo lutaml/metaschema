@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Metaschema
-  VERSION = "0.2.2"
+  VERSION = "0.2.3"
 
   class << self
     # Git revision of this checkout, for stamping generated source so a
