@@ -70,6 +70,14 @@ module Metaschema
             end
           end
 
+          # A scalar nested in a parent reaches the field class through .cast.
+          klass.define_singleton_method(:cast) do |data|
+            next super(data) if data.nil? || data.is_a?(Hash) ||
+              data.is_a?(Array) || data.is_a?(self)
+
+            new(content: collection ? [data] : data)
+          end
+
           %i[as_json as_yaml].each do |method|
             klass.define_singleton_method(method) do |instance, options = {}|
               FieldFactory.collapse_scalar(key, super(instance, options))

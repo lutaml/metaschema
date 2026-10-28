@@ -285,6 +285,19 @@ RSpec.describe "emitted source parity" do
       expect(parsed.map(&:content)).to eq(%w[2026-08-04 2026-08-04])
     end
 
+    it "wraps a scalar handed to .cast, which is how a parent attribute builds it" do
+      expect([dynamic, emitted].map { |k| k.cast("hello").content })
+        .to eq(%w[hello hello])
+    end
+
+    it "leaves instances and nil alone in .cast" do
+      [dynamic, emitted].each do |klass|
+        value = klass.new(content: "hello")
+
+        expect([klass.cast(value), klass.cast(nil)]).to eq([value, nil])
+      end
+    end
+
     it "does not accrete document markers across repeated YAML round-trips" do
       [dynamic, emitted].each do |klass|
         value = klass.new(content: "hello")

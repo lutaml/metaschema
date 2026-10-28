@@ -282,6 +282,17 @@ module Metaschema
               def scalar_field(key, collection: false)
                 @scalar_key = key
                 @scalar_collection = collection
+
+                # A scalar nested in a parent reaches the field class through
+                # .cast, not of_json; lutaml-model only honours a .cast defined
+                # on the class itself, so it is defined here, not on Base.
+                define_singleton_method(:cast) do |value|
+                  if scalar_content?(value) && !value.nil? && !value.is_a?(self)
+                    wrap_scalar(value)
+                  else
+                    super(value)
+                  end
+                end
               end
 
               def of_json(doc, options = {})
