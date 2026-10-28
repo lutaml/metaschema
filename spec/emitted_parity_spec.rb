@@ -285,7 +285,7 @@ RSpec.describe "emitted source parity" do
       expect(parsed.map(&:content)).to eq(%w[2026-08-04 2026-08-04])
     end
 
-    it "wraps a scalar handed to .cast, which is how a parent attribute builds it" do
+    it "wraps a scalar handed to .cast, as a parent attribute does" do
       expect([dynamic, emitted].map { |k| k.cast("hello").content })
         .to eq(%w[hello hello])
     end
